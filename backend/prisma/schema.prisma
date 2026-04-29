@@ -1,0 +1,257 @@
+// ApplyHub Prisma schema
+//
+// Source of truth for the database. Run `prisma generate` to regenerate
+// the typed client and `prisma db push` (dev) or `prisma migrate dev`
+// to apply changes to the database.
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────────────
+//  Enums
+// ─────────────────────────────────────────────────────────────────────
+enum PositionType {
+  backend
+  fullstack
+  ai_developer
+}
+
+enum ApplicationMethod {
+  email
+  linkedin_easy_apply
+  linkedin_external
+  company_website
+  job_board
+  referral
+  recruiter_outreach
+  other
+}
+
+enum WorkMode {
+  remote
+  hybrid
+  onsite
+  unknown
+}
+
+enum EmploymentType {
+  full_time
+  part_time
+  contract
+  internship
+  freelance
+}
+
+enum ApplicationStatus {
+  applied
+  acknowledged
+  screening
+  assessment
+  interview
+  offer
+  negotiating
+  accepted
+  rejected
+  withdrawn
+  ghosted
+  on_hold
+}
+
+enum ApplicationStage {
+  submitted
+  auto_reply
+  recruiter_screen
+  hiring_manager_screen
+  take_home
+  live_coding
+  tech_interview_1
+  tech_interview_2
+  system_design
+  behavioral
+  culture_fit
+  team_match
+  final_round
+  reference_check
+  offer_received
+  offer_negotiation
+  offer_accepted
+  offer_declined
+  closed
+}
+
+enum Priority {
+  low
+  medium
+  high
+}
+
+enum ContactRole {
+  recruiter
+  hiring_manager
+  engineer
+  referral
+  other
+}
+
+enum TemplateType {
+  cover_letter
+  email
+  linkedin_message
+  linkedin_connection
+  follow_up
+  thank_you
+  referral_request
+  answer
+  other
+}
+
+enum ApplicationEventType {
+  application_submitted
+  status_changed
+  stage_changed
+  message_sent
+  message_received
+  email_sent
+  email_received
+  interview_scheduled
+  interview_completed
+  interview_canceled
+  assessment_assigned
+  assessment_submitted
+  offer_received
+  offer_negotiated
+  offer_accepted
+  offer_declined
+  feedback_received
+  follow_up_sent
+  referral_requested
+  note_added
+  rejected
+  withdrawn
+  ghosted_marked
+  reopened
+  other
+}
+
+enum EventChannel {
+  email
+  linkedin
+  phone
+  video_call
+  in_person
+  platform
+  other
+}
+
+// ─────────────────────────────────────────────────────────────────────
+//  Models
+// ─────────────────────────────────────────────────────────────────────
+model Contact {
+  id           String      @id @default(uuid()) @db.Uuid
+  name         String      @db.VarChar(200)
+  title        String?     @db.VarChar(200)
+  role         ContactRole @default(recruiter)
+  email        String?     @db.VarChar(200)
+  phone        String?     @db.VarChar(50)
+  linkedinUrl  String?     @map("linkedin_url") @db.VarChar(500)
+  notes        String?     @db.Text
+  companyName  String?     @map("company_name") @db.VarChar(200)
+  createdAt    DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime    @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  applications JobApplication[] @relation("ApplicationContacts")
+
+  @@index([email])
+  @@index([companyName])
+  @@map("contacts")
+}
+
+model JobApplication {
+  id                String             @id @default(uuid()) @db.Uuid
+  companyName       String             @map("company_name") @db.VarChar(200)
+  companyUrl        String?            @map("company_url") @db.VarChar(500)
+  roleTitle         String             @map("role_title") @db.VarChar(250)
+  position          PositionType       @default(backend)
+  jobDescription    String?            @map("job_description") @db.Text
+  jobUrl            String?            @map("job_url") @db.VarChar(500)
+  location          String?            @db.VarChar(200)
+  workMode          WorkMode           @default(unknown) @map("work_mode")
+  employmentType    EmploymentType?    @map("employment_type")
+  applicationDate   DateTime           @map("application_date") @db.Date
+  applicationMethod ApplicationMethod  @default(linkedin_easy_apply) @map("application_method")
+  source            String?            @db.VarChar(100)
+  platform          String?            @db.VarChar(100)
+  salaryMin         Decimal?           @map("salary_min") @db.Decimal(12, 2)
+  salaryMax         Decimal?           @map("salary_max") @db.Decimal(12, 2)
+  currency          String?            @db.VarChar(10)
+  salaryPeriod      String?            @map("salary_period") @db.VarChar(20)
+  status            ApplicationStatus  @default(applied)
+  stage             ApplicationStage   @default(submitted)
+  priority          Priority           @default(medium)
+  excitement        Int?               @db.SmallInt
+  tags              String[]           @default([])
+  notes             String?            @db.Text
+  resumeVersion     String?            @map("resume_version") @db.Text
+  firstResponseAt   DateTime?          @map("first_response_at") @db.Timestamptz(6)
+  lastActivityAt    DateTime?          @map("last_activity_at") @db.Timestamptz(6)
+  closedAt          DateTime?          @map("closed_at") @db.Timestamptz(6)
+  archivedAt        DateTime?          @map("archived_at") @db.Timestamptz(6)
+  createdAt         DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  events   ApplicationEvent[]
+  contacts Contact[]          @relation("ApplicationContacts")
+
+  @@index([status])
+  @@index([position])
+  @@index([applicationDate])
+  @@index([archivedAt])
+  @@index([companyName])
+  @@map("job_applications")
+}
+
+model ApplicationEvent {
+  id            String                @id @default(uuid()) @db.Uuid
+  applicationId String                @map("application_id") @db.Uuid
+  application   JobApplication        @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  type          ApplicationEventType
+  newStatus     ApplicationStatus?    @map("new_status")
+  newStage      ApplicationStage?     @map("new_stage")
+  channel       EventChannel?
+  title         String                @db.VarChar(250)
+  description   String?               @db.Text
+  occurredAt    DateTime              @map("occurred_at") @db.Timestamptz(6)
+  metadata      Json?                 @db.JsonB
+  createdAt     DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime              @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([applicationId, occurredAt])
+  @@index([type])
+  @@index([occurredAt])
+  @@map("application_events")
+}
+
+model Template {
+  id          String       @id @default(uuid()) @db.Uuid
+  name        String       @db.VarChar(200)
+  type        TemplateType @default(email)
+  subject     String?      @db.VarChar(250)
+  body        String       @db.Text
+  language    String?      @db.VarChar(50)
+  tags        String[]     @default([])
+  usageCount  Int          @default(0) @map("usage_count")
+  isFavorite  Boolean      @default(false) @map("is_favorite")
+  lastUsedAt  DateTime?    @map("last_used_at") @db.Timestamptz(6)
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([type])
+  @@map("templates")
+}
