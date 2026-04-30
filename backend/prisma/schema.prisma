@@ -199,6 +199,13 @@ model JobApplication {
   tags              String[]           @default([])
   notes             String?            @db.Text
   resumeVersion     String?            @map("resume_version") @db.Text
+  // Vacancy contact (denormalized, optional)
+  contactName       String?            @map("contact_name") @db.VarChar(200)
+  contactLinkedin   String?            @map("contact_linkedin") @db.VarChar(500)
+  contactEmail      String?            @map("contact_email") @db.VarChar(200)
+  contactPhone      String?            @map("contact_phone") @db.VarChar(50)
+  contactOther      String?            @map("contact_other") @db.Text
+
   firstResponseAt   DateTime?          @map("first_response_at") @db.Timestamptz(6)
   lastActivityAt    DateTime?          @map("last_activity_at") @db.Timestamptz(6)
   closedAt          DateTime?          @map("closed_at") @db.Timestamptz(6)
