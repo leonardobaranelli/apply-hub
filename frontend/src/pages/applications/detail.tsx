@@ -8,9 +8,13 @@ import {
   Edit3,
   ExternalLink,
   Heart,
+  Linkedin,
+  Mail,
   MapPin,
+  Phone,
   RotateCcw,
   Trash2,
+  User,
   Workflow,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -44,6 +48,7 @@ import {
   stageLabels,
   workModeLabels,
 } from '@/types/labels';
+import type { JobApplication } from '@/types/models';
 
 export function ApplicationDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -273,6 +278,8 @@ export function ApplicationDetailPage() {
               ) : null}
             </CardContent>
           </Card>
+
+          <ContactCard application={application} />
         </aside>
       </div>
 
@@ -311,5 +318,98 @@ function Row({
       </span>
       <span className="text-right">{value}</span>
     </div>
+  );
+}
+
+function ContactCard({
+  application,
+}: {
+  application: JobApplication;
+}) {
+  const items: Array<{
+    icon: typeof User;
+    label: string;
+    value: string;
+    href?: string;
+  }> = [];
+
+  if (application.contactName) {
+    items.push({
+      icon: User,
+      label: 'Name',
+      value: application.contactName,
+    });
+  }
+  if (application.contactLinkedin) {
+    items.push({
+      icon: Linkedin,
+      label: 'LinkedIn',
+      value: application.contactLinkedin,
+      href: application.contactLinkedin.startsWith('http')
+        ? application.contactLinkedin
+        : `https://${application.contactLinkedin}`,
+    });
+  }
+  if (application.contactEmail) {
+    items.push({
+      icon: Mail,
+      label: 'Email',
+      value: application.contactEmail,
+      href: `mailto:${application.contactEmail}`,
+    });
+  }
+  if (application.contactPhone) {
+    items.push({
+      icon: Phone,
+      label: 'Phone',
+      value: application.contactPhone,
+      href: `tel:${application.contactPhone}`,
+    });
+  }
+  if (application.contactOther) {
+    items.push({
+      icon: User,
+      label: 'Other',
+      value: application.contactOther,
+    });
+  }
+
+  if (items.length === 0) return null;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <User size={16} /> Vacancy contact
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3 text-sm">
+        {items.map((item) => (
+          <div
+            key={item.label}
+            className="flex items-start gap-2 text-muted-foreground"
+          >
+            <item.icon size={14} className="mt-0.5 shrink-0" />
+            <div className="min-w-0 flex-1">
+              <p className="text-[11px] uppercase tracking-wider">
+                {item.label}
+              </p>
+              {item.href ? (
+                <a
+                  href={item.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="break-words text-foreground hover:text-primary hover:underline"
+                >
+                  {item.value}
+                </a>
+              ) : (
+                <p className="break-words text-foreground">{item.value}</p>
+              )}
+            </div>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
   );
 }

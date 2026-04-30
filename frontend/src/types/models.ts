@@ -67,6 +67,11 @@ export interface JobApplication {
   tags: string[];
   notes: string | null;
   resumeVersion: string | null;
+  contactName: string | null;
+  contactLinkedin: string | null;
+  contactEmail: string | null;
+  contactPhone: string | null;
+  contactOther: string | null;
   firstResponseAt: string | null;
   lastActivityAt: string | null;
   closedAt: string | null;
