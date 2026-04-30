@@ -25,4 +25,9 @@ export class QueryTemplateDto extends PaginationDto {
   @Transform(({ value }) => value === 'true' || value === true)
   @IsBoolean()
   favoritesOnly?: boolean;
+
+  @ApiPropertyOptional({ description: 'Filter by language code (e.g. "en", "es")' })
+  @IsOptional()
+  @IsString()
+  language?: string;
 }

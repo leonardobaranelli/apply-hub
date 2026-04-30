@@ -19,6 +19,7 @@ export const templatesApi = {
     search?: string;
     type?: TemplateType;
     favoritesOnly?: boolean;
+    language?: string;
   }): Promise<Paginated<Template>> => {
     const { data } = await api.get<Paginated<Template>>('/templates', {
       params,
