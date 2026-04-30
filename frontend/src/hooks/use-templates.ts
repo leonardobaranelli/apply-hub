@@ -9,6 +9,7 @@ interface ListParams {
   search?: string;
   type?: TemplateType;
   favoritesOnly?: boolean;
+  language?: string;
 }
 
 export const templateKeys = {
