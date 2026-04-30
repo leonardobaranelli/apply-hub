@@ -58,6 +58,11 @@ export class ApplicationsService {
           tags: dto.tags ?? [],
           notes: dto.notes ?? null,
           resumeVersion: dto.resumeVersion ?? null,
+          contactName: dto.contactName ?? null,
+          contactLinkedin: dto.contactLinkedin ?? null,
+          contactEmail: dto.contactEmail ?? null,
+          contactPhone: dto.contactPhone ?? null,
+          contactOther: dto.contactOther ?? null,
           lastActivityAt: new Date(),
         },
       });
@@ -234,6 +239,11 @@ export class ApplicationsService {
     if (dto.tags !== undefined) data.tags = dto.tags;
     if (dto.notes !== undefined) data.notes = dto.notes;
     if (dto.resumeVersion !== undefined) data.resumeVersion = dto.resumeVersion;
+    if (dto.contactName !== undefined) data.contactName = dto.contactName;
+    if (dto.contactLinkedin !== undefined) data.contactLinkedin = dto.contactLinkedin;
+    if (dto.contactEmail !== undefined) data.contactEmail = dto.contactEmail;
+    if (dto.contactPhone !== undefined) data.contactPhone = dto.contactPhone;
+    if (dto.contactOther !== undefined) data.contactOther = dto.contactOther;
 
     return this.prisma.jobApplication.update({
       where: { id },
