@@ -27,6 +27,7 @@ import {
   useToggleTemplateFavorite,
   useUpdateTemplate,
 } from '@/hooks/use-templates';
+import { cn } from '@/lib/cn';
 import { TemplateType } from '@/types/enums';
 import { templateLabels } from '@/types/labels';
 import type { Template } from '@/types/models';
@@ -40,10 +41,19 @@ const typeOptions = [
   })),
 ];
 
+type LanguageFilter = 'all' | 'en' | 'es';
+
+const LANGUAGE_TABS: ReadonlyArray<{ value: LanguageFilter; label: string }> = [
+  { value: 'all', label: 'All' },
+  { value: 'en', label: 'English' },
+  { value: 'es', label: 'Spanish' },
+];
+
 export function TemplatesPage() {
   const [search, setSearch] = useState('');
   const [type, setType] = useState<TemplateType | ''>('');
   const [favoritesOnly, setFavoritesOnly] = useState(false);
+  const [language, setLanguage] = useState<LanguageFilter>('all');
   const [openCreate, setOpenCreate] = useState(false);
   const [editing, setEditing] = useState<Template | null>(null);
 
@@ -52,9 +62,10 @@ export function TemplatesPage() {
       search: search || undefined,
       type: type || undefined,
       favoritesOnly: favoritesOnly || undefined,
+      language: language === 'all' ? undefined : language,
       limit: 100,
     }),
-    [search, type, favoritesOnly],
+    [search, type, favoritesOnly, language],
   );
   const { data, isLoading } = useTemplatesList(params);
 
@@ -69,6 +80,33 @@ export function TemplatesPage() {
           </Button>
         }
       />
+
+      <div
+        className="mb-3 inline-flex rounded-lg border border-border bg-card p-1"
+        role="tablist"
+        aria-label="Filter by language"
+      >
+        {LANGUAGE_TABS.map((tab) => {
+          const active = language === tab.value;
+          return (
+            <button
+              key={tab.value}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              onClick={() => setLanguage(tab.value)}
+              className={cn(
+                'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+                active
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:text-foreground',
+              )}
+            >
+              {tab.label}
+            </button>
+          );
+        })}
+      </div>
 
       <div className="mb-4 flex flex-col gap-2 rounded-xl border border-border bg-card p-4 md:flex-row md:items-center">
         <Input

@@ -25,7 +25,7 @@ export class TemplatesService {
   }
 
   async findAll(query: QueryTemplateDto): Promise<PaginatedResult<Template>> {
-    const { page, limit, search, type, favoritesOnly } = query;
+    const { page, limit, search, type, favoritesOnly, language } = query;
     const where: Prisma.TemplateWhereInput = {};
 
     if (search) {
@@ -37,6 +37,7 @@ export class TemplatesService {
     }
     if (type) where.type = type;
     if (favoritesOnly) where.isFavorite = true;
+    if (language) where.language = language;
 
     const [data, total] = await this.prisma.$transaction([
       this.prisma.template.findMany({
