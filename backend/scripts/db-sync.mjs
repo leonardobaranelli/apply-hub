@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 /**
- * Bulk-copies data between the local primary database and the Render replica
+ * Bulk-copies data between the local primary database and the secondary replica
  * using `pg_dump | psql` inside a one-off `postgres:18-alpine` container, so
  * you don't need pg_dump installed locally.
  *
  * Usage:
- *   node scripts/db-sync.mjs local-to-render   # mirror local -> render
- *   node scripts/db-sync.mjs render-to-local   # restore render -> local
+ *   node scripts/db-sync.mjs local-to-replica   # mirror local -> replica
+ *   node scripts/db-sync.mjs replica-to-local   # restore replica -> local
  *
  * Requirements:
  *   - Docker is running.
@@ -61,14 +61,14 @@ function sanitizePgUrl(raw) {
 
 const fileEnv = parseEnvFile(ENV_FILE);
 const localUrl = process.env.DATABASE_URL || fileEnv.DATABASE_URL;
-const renderUrl = process.env.DATABASE_URL_REPLICA || fileEnv.DATABASE_URL_REPLICA;
+const replicaUrl = process.env.DATABASE_URL_REPLICA || fileEnv.DATABASE_URL_REPLICA;
 const network = process.env.DOCKER_NETWORK || 'apply-hub_default';
 
 if (!localUrl) {
   console.error('\u2717 DATABASE_URL is not set in .env');
   process.exit(1);
 }
-if (!renderUrl) {
+if (!replicaUrl) {
   console.error('\u2717 DATABASE_URL_REPLICA is not set in .env');
   process.exit(1);
 }
@@ -76,14 +76,16 @@ if (!renderUrl) {
 const direction = process.argv[2];
 let src;
 let dst;
-if (direction === 'local-to-render') {
+if (direction === 'local-to-replica') {
   src = sanitizePgUrl(localUrl);
-  dst = sanitizePgUrl(renderUrl);
-} else if (direction === 'render-to-local') {
-  src = sanitizePgUrl(renderUrl);
+  dst = sanitizePgUrl(replicaUrl);
+} else if (direction === 'replica-to-local') {
+  src = sanitizePgUrl(replicaUrl);
   dst = sanitizePgUrl(localUrl);
 } else {
-  console.error('Usage: node scripts/db-sync.mjs <local-to-render|render-to-local>');
+  console.error(
+    'Usage: node scripts/db-sync.mjs <local-to-replica|replica-to-local>',
+  );
   process.exit(1);
 }
 
@@ -115,7 +117,7 @@ if (result.error) {
     console.error(
       '\n✗ Docker CLI was not found in this environment.\n' +
         '  Run this command from your host machine (not from `docker compose exec backend ...`).\n' +
-        '  Example: npm --prefix backend run db:sync:local-to-render',
+        '  Example: npm --prefix backend run db:sync:local-to-replica',
     );
   } else {
     console.error(`\n✗ Sync failed before execution: ${result.error.message}`);

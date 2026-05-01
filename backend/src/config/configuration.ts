@@ -8,7 +8,7 @@ export interface AppConfig {
 export interface DatabaseConfig {
   url: string;
   /**
-   * Optional secondary database (e.g. Render-hosted Postgres) used as a live
+   * Optional secondary database (e.g. managed Postgres replica) used as a live
    * mirror. When set, every successful write on the primary is replicated
    * asynchronously by `PrismaService`.
    */

@@ -74,35 +74,35 @@ async function collect(db) {
 async function main() {
   const fileEnv = parseEnvFile(ENV_FILE);
   const localUrl = process.env.DATABASE_URL || fileEnv.DATABASE_URL;
-  const renderUrl =
+  const replicaUrl =
     process.env.DATABASE_URL_REPLICA || fileEnv.DATABASE_URL_REPLICA;
   if (!localUrl) throw new Error('DATABASE_URL is not set');
-  if (!renderUrl) throw new Error('DATABASE_URL_REPLICA is not set');
+  if (!replicaUrl) throw new Error('DATABASE_URL_REPLICA is not set');
 
   const local = new PrismaClient({
     datasources: { db: { url: sanitizePgUrl(localUrl) } },
     log: ['error'],
   });
-  const render = new PrismaClient({
-    datasources: { db: { url: sanitizePgUrl(renderUrl) } },
+  const replica = new PrismaClient({
+    datasources: { db: { url: sanitizePgUrl(replicaUrl) } },
     log: ['error'],
   });
 
   try {
     await local.$connect();
-    await render.$connect();
-    const [localStats, renderStats] = await Promise.all([
+    await replica.$connect();
+    const [localStats, replicaStats] = await Promise.all([
       collect(local),
-      collect(render),
+      collect(replica),
     ]);
     const sameCounts =
-      JSON.stringify(localStats.counts) === JSON.stringify(renderStats.counts);
+      JSON.stringify(localStats.counts) === JSON.stringify(replicaStats.counts);
     console.log(
       JSON.stringify(
         {
           sameCounts,
           local: localStats,
-          render: renderStats,
+          replica: replicaStats,
         },
         null,
         2,
@@ -110,7 +110,7 @@ async function main() {
     );
   } finally {
     await local.$disconnect();
-    await render.$disconnect();
+    await replica.$disconnect();
   }
 }
 
