@@ -29,16 +29,37 @@ export class ApiError extends Error {
 api.interceptors.response.use(
   (response) => response,
   (error: AxiosError<ApiErrorBody>) => {
-    const data = error.response?.data;
-    const status = error.response?.status ?? 500;
+    const res = error.response;
+    const data = res?.data;
     const messageRaw = data?.message;
     const message = Array.isArray(messageRaw)
       ? messageRaw.join(' • ')
       : (messageRaw ?? error.message);
 
+    if (!res) {
+      toast.error('Connection error', {
+        description:
+          message || 'Could not reach the API. Is the backend running?',
+      });
+      return Promise.reject(new ApiError(message, 0, data));
+    }
+
+    const status = res.status;
+
     if (status >= 500) {
       toast.error('Server error', { description: message });
+    } else if (status >= 400) {
+      const title =
+        status === 400
+          ? 'Invalid request'
+          : status === 403
+            ? 'Forbidden'
+            : status === 404
+              ? 'Not found'
+              : 'Request failed';
+      toast.error(title, { description: message });
     }
+
     return Promise.reject(new ApiError(message, status, data));
   },
 );
