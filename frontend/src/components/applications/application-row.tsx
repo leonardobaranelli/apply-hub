@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/status/status-badge';
 import { usePlatformSettings } from '@/context/platform-settings-context';
 import { formatDate, formatRelative, formatSalaryRange } from '@/lib/format';
-import { positionLabels, stageLabels } from '@/types/labels';
+import { stageLabels } from '@/types/labels';
 import type { JobApplication } from '@/types/models';
 
 interface Props {
@@ -12,8 +12,11 @@ interface Props {
 }
 
 export function ApplicationRow({ application }: Props) {
-  const { effectiveMethodLabels, effectiveWorkModeLabels } =
-    usePlatformSettings();
+  const {
+    effectiveMethodLabels,
+    effectiveWorkModeLabels,
+    effectivePositionLabels,
+  } = usePlatformSettings();
   const salary = formatSalaryRange(
     application.salaryMin,
     application.salaryMax,
@@ -44,7 +47,8 @@ export function ApplicationRow({ application }: Props) {
           <StatusBadge status={application.status} />
           <Badge variant="outline">{stageLabels[application.stage]}</Badge>
           <Badge variant="secondary">
-            {positionLabels[application.position]}
+            {effectivePositionLabels[application.position] ??
+              application.position}
           </Badge>
           <Badge variant="outline">
             {effectiveMethodLabels[application.applicationMethod]}

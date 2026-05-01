@@ -1,15 +1,11 @@
 import type {
   ApplicationEventType,
-  ApplicationMethod,
   ApplicationStage,
   ApplicationStatus,
   ContactRole,
-  EmploymentType,
   EventChannel,
-  PositionType,
   Priority,
   SearchCompletionKey,
-  SearchPlatform,
   TemplateType,
   WorkMode,
 } from './enums';
@@ -45,7 +41,7 @@ export interface ApplicationEvent {
 
 export interface JobSearchSession {
   id: string;
-  platform: SearchPlatform;
+  platform: string;
   platformOther: string | null;
   queryTitle: string;
   filterDescription: string | null;
@@ -64,15 +60,15 @@ export interface JobApplication {
   companyName: string;
   companyUrl: string | null;
   roleTitle: string;
-  position: PositionType;
+  position: string;
   jobDescription: string | null;
   jobUrl: string | null;
   location: string | null;
   workMode: WorkMode;
-  employmentType: EmploymentType | null;
+  employmentType: string | null;
   applicationDate: string;
   vacancyPostedDate: string;
-  applicationMethod: ApplicationMethod;
+  applicationMethod: string;
   source: string | null;
   platform: string | null;
   salaryMin: string | null;
@@ -98,7 +94,7 @@ export interface JobApplication {
   jobSearchSession?: {
     id: string;
     queryTitle: string;
-    platform: SearchPlatform;
+    platform: string;
     platformOther: string | null;
     searchedAt: string;
     isComplete: boolean;
@@ -141,8 +137,8 @@ export interface DashboardOverview {
     avgDaysToOffer: number | null;
   };
   byStatus: Array<{ key: ApplicationStatus; count: number; percentage: number }>;
-  byPosition: Array<{ key: PositionType; count: number; percentage: number }>;
-  byMethod: Array<{ key: ApplicationMethod; count: number; percentage: number }>;
+  byPosition: Array<{ key: string; count: number; percentage: number }>;
+  byMethod: Array<{ key: string; count: number; percentage: number }>;
   byWorkMode: Array<{ key: WorkMode; count: number; percentage: number }>;
   funnel: Array<{
     status: ApplicationStatus;
@@ -153,7 +149,7 @@ export interface DashboardOverview {
   applicationsPerDay: Array<{ date: string; count: number }>;
   activityHeatmap: Array<{ weekday: number; hour: number; count: number }>;
   methodEffectiveness: Array<{
-    method: ApplicationMethod;
+    method: string;
     total: number;
     responseRate: number;
     interviewRate: number;
@@ -169,7 +165,7 @@ export interface DashboardOverview {
 
 export interface SearchSessionSummary {
   id: string;
-  platform: SearchPlatform;
+  platform: string;
   platformOther: string | null;
   queryTitle: string;
   searchedAt: string;
@@ -184,7 +180,7 @@ export interface SearchActivityOverview {
   totalSessions: number;
   linkedApplicationsCount: number;
   byPlatform: Array<{
-    key: SearchPlatform;
+    key: string;
     count: number;
     percentage: number;
   }>;

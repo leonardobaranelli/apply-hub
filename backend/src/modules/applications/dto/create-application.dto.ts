@@ -16,10 +16,8 @@ import {
   MinLength,
 } from 'class-validator';
 import {
-  ApplicationMethod,
   ApplicationStage,
   ApplicationStatus,
-  EmploymentType,
   PositionType,
   Priority,
   WorkMode,
@@ -44,10 +42,14 @@ export class CreateApplicationDto {
   @MaxLength(250)
   roleTitle!: string;
 
-  @ApiPropertyOptional({ enum: PositionType, default: PositionType.BACKEND })
+  @ApiPropertyOptional({
+    description: 'Built-in or custom position id from platform settings',
+    default: PositionType.BACKEND,
+  })
   @IsOptional()
-  @IsEnum(PositionType)
-  position?: PositionType;
+  @IsString()
+  @MaxLength(48)
+  position?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -71,10 +73,13 @@ export class CreateApplicationDto {
   @IsEnum(WorkMode)
   workMode?: WorkMode;
 
-  @ApiPropertyOptional({ enum: EmploymentType })
+  @ApiPropertyOptional({
+    description: 'Built-in or custom employment type id from platform settings',
+  })
   @IsOptional()
-  @IsEnum(EmploymentType)
-  employmentType?: EmploymentType;
+  @IsString()
+  @MaxLength(48)
+  employmentType?: string;
 
   @ApiPropertyOptional({
     format: 'date',
@@ -92,10 +97,13 @@ export class CreateApplicationDto {
   @IsDateString()
   vacancyPostedDate?: string;
 
-  @ApiPropertyOptional({ enum: ApplicationMethod })
+  @ApiPropertyOptional({
+    description: 'Built-in or custom application method id from platform settings',
+  })
   @IsOptional()
-  @IsEnum(ApplicationMethod)
-  applicationMethod?: ApplicationMethod;
+  @IsString()
+  @MaxLength(64)
+  applicationMethod?: string;
 
   @ApiPropertyOptional()
   @IsOptional()

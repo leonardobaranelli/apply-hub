@@ -1,7 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsDateString, IsEnum, IsOptional, IsString } from 'class-validator';
+import { IsDateString, IsOptional, IsString } from 'class-validator';
 import { PaginationDto } from '../../../common/dto/pagination.dto';
-import { SearchPlatform } from '../domain/search-session.enums';
 
 export class QuerySearchSessionDto extends PaginationDto {
   @ApiPropertyOptional()
@@ -9,10 +8,10 @@ export class QuerySearchSessionDto extends PaginationDto {
   @IsString()
   search?: string;
 
-  @ApiPropertyOptional({ enum: SearchPlatform })
+  @ApiPropertyOptional()
   @IsOptional()
-  @IsEnum(SearchPlatform)
-  platform?: SearchPlatform;
+  @IsString()
+  platform?: string;
 
   @ApiPropertyOptional({ format: 'date' })
   @IsOptional()

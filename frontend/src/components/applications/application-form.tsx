@@ -9,6 +9,10 @@ import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { usePlatformSettings } from '@/context/platform-settings-context';
+import {
+  DEFAULT_RESUME_VERSION_OPTIONS,
+  DEFAULT_ROLE_TITLE,
+} from '@/lib/form-defaults';
 import { useSearchSessionsList } from '@/hooks/use-search-sessions';
 import { todayIso, formatDate } from '@/lib/format';
 import {
@@ -18,29 +22,12 @@ import {
   Priority,
   WorkMode,
 } from '@/types/enums';
-import {
-  employmentLabels,
-  positionLabels,
-  priorityLabels,
-} from '@/types/labels';
+import { priorityLabels } from '@/types/labels';
 import type { JobApplication } from '@/types/models';
 import type {
   CreateApplicationInput,
   UpdateApplicationInput,
 } from '@/api/applications';
-
-// ─────────────────────────────────────────────────────────────────────
-//  Domain options (form-only, no backend enum needed)
-// ─────────────────────────────────────────────────────────────────────
-const ROLE_OPTIONS = [
-  'Junior',
-  'Junior Advanced',
-  'Junior Advanced/SSR',
-  'SSR',
-  'Senior',
-] as const;
-
-const DEFAULT_ROLE_TITLE = 'Junior Advanced/SSR';
 
 const DEFAULT_SALARY_PERIOD = 'Indefinite';
 
@@ -51,12 +38,6 @@ function dateInputDefault(
   if (!iso) return fallback;
   return iso.slice(0, 10);
 }
-
-const RESUME_OPTIONS = [
-  'Both versions',
-  'Spanish version',
-  'English version',
-] as const;
 
 const PLACEHOLDER = 'Unspecified';
 
@@ -78,12 +59,12 @@ const schema = z.object({
   companyName: z.string().trim().min(1, 'Company is required'),
   companyUrl: z.string().optional().or(z.literal('')),
   roleTitle: z.string().min(1, 'Role is required'),
-  position: z.nativeEnum(PositionType),
+  position: z.string().min(1, 'Position type is required'),
   applicationDate: z.string().min(1, 'Date is required'),
   vacancyPostedDate: z.string().min(1, 'Date is required'),
-  applicationMethod: z.nativeEnum(ApplicationMethod),
+  applicationMethod: z.string().min(1, 'Application method is required'),
   workMode: z.nativeEnum(WorkMode),
-  employmentType: z.nativeEnum(EmploymentType).optional().or(z.literal('')),
+  employmentType: z.string().optional().or(z.literal('')),
   jobUrl: z.string().optional().or(z.literal('')),
   location: z.string().optional(),
   source: z.string().optional(),
@@ -148,7 +129,14 @@ export function ApplicationForm({
   submitLabel = 'Save',
 }: Props) {
   const isEdit = Boolean(defaultValues?.id);
-  const { methodSelectOptions, workModeSelectOptions } = usePlatformSettings();
+  const {
+    methodSelectOptions,
+    workModeSelectOptions,
+    positionSelectOptions,
+    employmentSelectOptions,
+    roleTitleOptions,
+    resumeVersionOptions,
+  } = usePlatformSettings();
 
   const { data: sessionsData } = useSearchSessionsList({ limit: 100 });
 
@@ -214,7 +202,8 @@ export function ApplicationForm({
       notes: defaultValues?.notes ?? '',
       tags: defaultValues?.tags?.join(', ') ?? '',
       jobDescription: defaultValues?.jobDescription ?? '',
-      resumeVersion: defaultValues?.resumeVersion ?? RESUME_OPTIONS[0],
+      resumeVersion:
+        defaultValues?.resumeVersion ?? DEFAULT_RESUME_VERSION_OPTIONS[0],
       contactName: defaultValues?.contactName ?? (isEdit ? '' : PLACEHOLDER),
       contactLinkedin:
         defaultValues?.contactLinkedin ?? (isEdit ? '' : PLACEHOLDER),
@@ -240,8 +229,12 @@ export function ApplicationForm({
   ]);
 
   const positionOptions = useMemo(
-    () => enumToOptions(PositionType, positionLabels),
-    [],
+    () =>
+      positionSelectOptions.map((o) => ({
+        value: o.value,
+        label: o.label,
+      })),
+    [positionSelectOptions],
   );
   const methodOptions = useMemo(
     () =>
@@ -266,23 +259,26 @@ export function ApplicationForm({
   const employmentOptions = useMemo(
     () => [
       { value: '', label: 'Unspecified' },
-      ...enumToOptions(EmploymentType, employmentLabels),
+      ...employmentSelectOptions.map((o) => ({
+        value: o.value,
+        label: o.label,
+      })),
     ],
-    [],
+    [employmentSelectOptions],
   );
   const roleOptions = useMemo(() => {
-    const base = [...ROLE_OPTIONS] as string[];
+    const base = [...roleTitleOptions];
     const current = defaultValues?.roleTitle;
     if (current && !base.includes(current)) base.unshift(current);
     return literalToOptions(base);
-  }, [defaultValues?.roleTitle]);
+  }, [roleTitleOptions, defaultValues?.roleTitle]);
 
   const resumeOptions = useMemo(() => {
-    const base = [...RESUME_OPTIONS] as string[];
-    const current = defaultValues?.resumeVersion;
+    const base = [...resumeVersionOptions];
+    const current = defaultValues?.resumeVersion ?? undefined;
     if (current && !base.includes(current)) base.unshift(current);
     return literalToOptions(base);
-  }, [defaultValues?.resumeVersion]);
+  }, [resumeVersionOptions, defaultValues?.resumeVersion]);
 
   const submit = async (values: FormValues): Promise<void> => {
     const tags = values.tags
@@ -298,8 +294,8 @@ export function ApplicationForm({
       vacancyPostedDate: values.vacancyPostedDate,
       applicationMethod: values.applicationMethod,
       workMode: values.workMode,
-      employmentType: values.employmentType
-        ? (values.employmentType as EmploymentType)
+      employmentType: values.employmentType?.trim()
+        ? values.employmentType.trim()
         : null,
       jobUrl: stripPlaceholder(values.jobUrl),
       location: stripPlaceholder(values.location),

@@ -2,19 +2,9 @@ import { Search, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
-import {
-  ApplicationMethod,
-  ApplicationStatus,
-  PositionType,
-  Priority,
-  WorkMode,
-} from '@/types/enums';
+import { ApplicationStatus, Priority } from '@/types/enums';
 import { usePlatformSettings } from '@/context/platform-settings-context';
-import {
-  positionLabels,
-  priorityLabels,
-  statusLabels,
-} from '@/types/labels';
+import { priorityLabels, statusLabels } from '@/types/labels';
 import type { ApplicationFilters as Filters } from '@/api/applications';
 
 interface Props {
@@ -33,19 +23,23 @@ const enumOpts = <T extends Record<string, string>>(
 ];
 
 export function ApplicationFiltersBar({ value, onChange }: Props) {
-  const { methodSelectOptions, workModeSelectOptions } = usePlatformSettings();
+  const {
+    methodSelectOptions,
+    workModeSelectOptions,
+    positionSelectOptions,
+  } = usePlatformSettings();
 
   const update = <K extends keyof Filters>(key: K, val: Filters[K]): void => {
     onChange({ ...value, [key]: val, page: 1 });
   };
 
-  const updateSingleArray = <T extends string>(
+  const updateSingleArray = (
     key: 'status' | 'position' | 'method' | 'workMode' | 'priority',
     raw: string,
   ): void => {
     onChange({
       ...value,
-      [key]: raw ? ([raw] as T[]) : undefined,
+      [key]: raw ? [raw] : undefined,
       page: 1,
     });
   };
@@ -79,25 +73,25 @@ export function ApplicationFiltersBar({ value, onChange }: Props) {
         <div className="flex flex-wrap items-center gap-2">
           <Select
             value={value.status?.[0] ?? ''}
-            onChange={(e) =>
-              updateSingleArray<ApplicationStatus>('status', e.target.value)
-            }
+            onChange={(e) => updateSingleArray('status', e.target.value)}
             options={enumOpts(ApplicationStatus, statusLabels)}
             className="h-9 min-w-[140px]"
           />
           <Select
             value={value.position?.[0] ?? ''}
-            onChange={(e) =>
-              updateSingleArray<PositionType>('position', e.target.value)
-            }
-            options={enumOpts(PositionType, positionLabels)}
+            onChange={(e) => updateSingleArray('position', e.target.value)}
+            options={[
+              allOption,
+              ...positionSelectOptions.map((o) => ({
+                value: o.value,
+                label: o.label,
+              })),
+            ]}
             className="h-9 min-w-[140px]"
           />
           <Select
             value={value.method?.[0] ?? ''}
-            onChange={(e) =>
-              updateSingleArray<ApplicationMethod>('method', e.target.value)
-            }
+            onChange={(e) => updateSingleArray('method', e.target.value)}
             options={[
               allOption,
               ...methodSelectOptions.map((o) => ({
@@ -109,9 +103,7 @@ export function ApplicationFiltersBar({ value, onChange }: Props) {
           />
           <Select
             value={value.workMode?.[0] ?? ''}
-            onChange={(e) =>
-              updateSingleArray<WorkMode>('workMode', e.target.value)
-            }
+            onChange={(e) => updateSingleArray('workMode', e.target.value)}
             options={[
               allOption,
               ...workModeSelectOptions.map((o) => ({
@@ -123,9 +115,7 @@ export function ApplicationFiltersBar({ value, onChange }: Props) {
           />
           <Select
             value={value.priority?.[0] ?? ''}
-            onChange={(e) =>
-              updateSingleArray<Priority>('priority', e.target.value)
-            }
+            onChange={(e) => updateSingleArray('priority', e.target.value)}
             options={enumOpts(Priority, priorityLabels)}
             className="h-9 min-w-[100px]"
           />

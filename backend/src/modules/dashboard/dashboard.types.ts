@@ -1,8 +1,5 @@
-import type { SearchPlatform } from '@prisma/client';
 import {
-  ApplicationMethod,
   ApplicationStatus,
-  PositionType,
   WorkMode,
 } from '../applications/domain/application.enums';
 
@@ -50,7 +47,7 @@ export interface ActivityHeatmapCell {
 }
 
 export interface MethodEffectiveness {
-  method: ApplicationMethod;
+  method: string;
   total: number;
   responseRate: number;
   interviewRate: number;
@@ -66,8 +63,8 @@ export interface TopCompany {
 export interface DashboardOverview {
   kpis: KpiSummary;
   byStatus: DistributionItem<ApplicationStatus>[];
-  byPosition: DistributionItem<PositionType>[];
-  byMethod: DistributionItem<ApplicationMethod>[];
+  byPosition: DistributionItem<string>[];
+  byMethod: DistributionItem<string>[];
   byWorkMode: DistributionItem<WorkMode>[];
   funnel: FunnelStep[];
   applicationsPerDay: TimeSeriesPoint[];
@@ -79,7 +76,7 @@ export interface DashboardOverview {
 
 export interface SearchSessionSummary {
   id: string;
-  platform: SearchPlatform;
+  platform: string;
   platformOther: string | null;
   queryTitle: string;
   searchedAt: string;
@@ -93,7 +90,7 @@ export interface SearchSessionSummary {
 export interface SearchActivityOverview {
   totalSessions: number;
   linkedApplicationsCount: number;
-  byPlatform: DistributionItem<SearchPlatform>[];
+  byPlatform: DistributionItem<string>[];
   byCompletion: DistributionItem<SearchCompletionKey>[];
   searchesPerDay: TimeSeriesPoint[];
   topQueries: Array<{ queryTitle: string; count: number }>;

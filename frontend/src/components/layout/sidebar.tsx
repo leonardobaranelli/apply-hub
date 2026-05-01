@@ -33,7 +33,7 @@ export function Sidebar() {
         </div>
         <div>
           <p className="text-sm font-semibold">ApplyHub</p>
-          <p className="text-xs text-muted-foreground">your job hub</p>
+          <p className="text-xs text-muted-foreground">Your job search hub</p>
         </div>
       </div>
       <nav className="flex-1 space-y-1 px-3 py-4">
@@ -58,7 +58,7 @@ export function Sidebar() {
       </nav>
       <div className="border-t border-border px-6 py-4 text-xs text-muted-foreground">
         <p>v1.0.0</p>
-        <p className="mt-1">Built for you.</p>
+        <p className="mt-1">Optimizing the job search process…</p>
       </div>
     </aside>
   );

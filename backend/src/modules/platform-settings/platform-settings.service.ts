@@ -3,18 +3,27 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import {
-  ApplicationMethod,
-  PlatformSettings,
-  WorkMode,
-} from '@prisma/client';
+import { PlatformSettings, WorkMode } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { FormConfigDto } from './dto/form-config.dto';
 import { UpdatePlatformSettingsDto } from './dto/update-platform-settings.dto';
+import {
+  allEmploymentIds,
+  allMethodIds,
+  allPositionIds,
+  allSearchPlatformIds,
+  assertCustomSlugs,
+  assertFullPermutation,
+  assertLabelKeys,
+  assertSubset,
+  BUILTIN_EMPLOYMENT_IDS,
+  BUILTIN_METHOD_IDS,
+  BUILTIN_POSITION_IDS,
+  BUILTIN_SEARCH_PLATFORM_IDS,
+} from './domain/form-config.helpers';
 
 const SETTINGS_ID = 'default';
 
-const METHOD_VALUES = new Set<string>(Object.values(ApplicationMethod));
 const WORK_MODE_VALUES = new Set<string>(Object.values(WorkMode));
 
 @Injectable()
@@ -30,9 +39,15 @@ export class PlatformSettingsService {
       data: {
         id: SETTINGS_ID,
         themeId: 'ocean',
+        appearanceMode: 'dark',
         formConfig: {},
       },
     });
+  }
+
+  async getFormConfig(): Promise<FormConfigDto> {
+    const row = await this.get();
+    return (row.formConfig as FormConfigDto) ?? {};
   }
 
   async update(dto: UpdatePlatformSettingsDto): Promise<PlatformSettings> {
@@ -46,6 +61,9 @@ export class PlatformSettingsService {
         where: { id: SETTINGS_ID },
         data: {
           ...(dto.themeId !== undefined ? { themeId: dto.themeId } : {}),
+          ...(dto.appearanceMode !== undefined
+            ? { appearanceMode: dto.appearanceMode }
+            : {}),
           ...(dto.formConfig !== undefined
             ? { formConfig: dto.formConfig as object }
             : {}),
@@ -57,41 +75,44 @@ export class PlatformSettingsService {
   }
 
   private assertValidFormConfig(config: FormConfigDto): void {
-    if (config.applicationMethodLabels) {
-      for (const key of Object.keys(config.applicationMethodLabels)) {
-        if (!METHOD_VALUES.has(key)) {
-          throw new BadRequestException(
-            `Invalid applicationMethodLabels key: ${key}`,
-          );
-        }
-      }
-    }
-    if (config.applicationMethodOrder !== undefined) {
-      const order = config.applicationMethodOrder;
-      if (order.length !== METHOD_VALUES.size) {
-        throw new BadRequestException(
-          'applicationMethodOrder must list each application method exactly once',
-        );
-      }
-      const seen = new Set<string>();
-      for (const key of order) {
-        if (!METHOD_VALUES.has(key) || seen.has(key)) {
-          throw new BadRequestException(
-            `Invalid applicationMethodOrder entry: ${key}`,
-          );
-        }
-        seen.add(key);
-      }
-    }
-    if (config.applicationMethodHidden) {
-      for (const key of config.applicationMethodHidden) {
-        if (!METHOD_VALUES.has(key)) {
-          throw new BadRequestException(
-            `Invalid applicationMethodHidden value: ${key}`,
-          );
-        }
-      }
-    }
+    assertCustomSlugs(
+      config.customApplicationMethods,
+      BUILTIN_METHOD_IDS,
+      'customApplicationMethods',
+    );
+    assertCustomSlugs(
+      config.customPositionTypes,
+      BUILTIN_POSITION_IDS,
+      'customPositionTypes',
+    );
+    assertCustomSlugs(
+      config.customEmploymentTypes,
+      BUILTIN_EMPLOYMENT_IDS,
+      'customEmploymentTypes',
+    );
+    assertCustomSlugs(
+      config.customSearchPlatforms,
+      BUILTIN_SEARCH_PLATFORM_IDS,
+      'customSearchPlatforms',
+    );
+
+    const methodUniverse = allMethodIds(config);
+    assertLabelKeys(
+      config.applicationMethodLabels,
+      methodUniverse,
+      'applicationMethodLabels',
+    );
+    assertFullPermutation(
+      config.applicationMethodOrder,
+      methodUniverse,
+      'applicationMethodOrder',
+    );
+    assertSubset(
+      config.applicationMethodHidden,
+      methodUniverse,
+      'applicationMethodHidden',
+    );
+
     if (config.workModeLabels) {
       for (const key of Object.keys(config.workModeLabels)) {
         if (!WORK_MODE_VALUES.has(key)) {
@@ -99,6 +120,60 @@ export class PlatformSettingsService {
             `Invalid workModeLabels key: ${key}`,
           );
         }
+      }
+    }
+
+    const posUniverse = allPositionIds(config);
+    assertLabelKeys(config.positionLabels, posUniverse, 'positionLabels');
+    assertFullPermutation(
+      config.positionOrder,
+      posUniverse,
+      'positionOrder',
+    );
+    assertSubset(config.positionHidden, posUniverse, 'positionHidden');
+
+    const empUniverse = allEmploymentIds(config);
+    assertLabelKeys(
+      config.employmentLabels,
+      empUniverse,
+      'employmentLabels',
+    );
+    assertFullPermutation(
+      config.employmentOrder,
+      empUniverse,
+      'employmentOrder',
+    );
+    assertSubset(
+      config.employmentHidden,
+      empUniverse,
+      'employmentHidden',
+    );
+
+    const platUniverse = allSearchPlatformIds(config);
+    assertLabelKeys(
+      config.searchPlatformLabels,
+      platUniverse,
+      'searchPlatformLabels',
+    );
+    assertFullPermutation(
+      config.searchPlatformOrder,
+      platUniverse,
+      'searchPlatformOrder',
+    );
+    assertSubset(
+      config.searchPlatformHidden,
+      platUniverse,
+      'searchPlatformHidden',
+    );
+
+    if (config.roleTitleOptions !== undefined) {
+      if (config.roleTitleOptions.length > 80) {
+        throw new BadRequestException('roleTitleOptions: at most 80 entries');
+      }
+    }
+    if (config.resumeVersionOptions !== undefined) {
+      if (config.resumeVersionOptions.length > 40) {
+        throw new BadRequestException('resumeVersionOptions: at most 40 entries');
       }
     }
   }

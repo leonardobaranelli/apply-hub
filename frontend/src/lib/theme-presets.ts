@@ -9,6 +9,10 @@ export const THEME_PRESET_IDS = [
 
 export type ThemePresetId = (typeof THEME_PRESET_IDS)[number];
 
+export const APPEARANCE_MODES = ['dark', 'dim', 'light'] as const;
+
+export type AppearanceMode = (typeof APPEARANCE_MODES)[number];
+
 export const THEME_PRESETS: ReadonlyArray<{
   id: ThemePresetId;
   label: string;
@@ -21,3 +25,9 @@ export const THEME_PRESETS: ReadonlyArray<{
   { id: 'amber', label: 'Amber', hint: 'Warm gold' },
   { id: 'slate', label: 'Slate', hint: 'Cool steel blue-gray' },
 ];
+
+export const APPEARANCE_LABELS: Record<AppearanceMode, string> = {
+  dark: 'Dark',
+  dim: 'Dim',
+  light: 'Light',
+};

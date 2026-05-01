@@ -1,14 +1,24 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { JobSearchSession, Prisma } from '@prisma/client';
 import { PaginatedResult } from '../../common/dto/pagination.dto';
 import { PrismaService } from '../../prisma/prisma.service';
+import { allSearchPlatformIds } from '../platform-settings/domain/form-config.helpers';
+import type { FormConfigDto } from '../platform-settings/dto/form-config.dto';
+import { PlatformSettingsService } from '../platform-settings/platform-settings.service';
 import { CreateSearchSessionDto } from './dto/create-search-session.dto';
 import { QuerySearchSessionDto } from './dto/query-search-session.dto';
 import { UpdateSearchSessionDto } from './dto/update-search-session.dto';
 
 @Injectable()
 export class SearchSessionsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly platformSettings: PlatformSettingsService,
+  ) {}
 
   private parseJobPostedDateOnly(raw: string): Date {
     const day = raw.trim().slice(0, 10);
@@ -16,6 +26,8 @@ export class SearchSessionsService {
   }
 
   async create(dto: CreateSearchSessionDto): Promise<JobSearchSession> {
+    await this.assertSearchPlatform(dto.platform);
+
     const searchedAt = dto.searchedAt ? new Date(dto.searchedAt) : new Date();
     const jobPostedFrom = dto.jobPostedFrom
       ? this.parseJobPostedDateOnly(dto.jobPostedFrom)
@@ -105,6 +117,9 @@ export class SearchSessionsService {
     if (!existing) {
       throw new NotFoundException(`Search session ${id} not found`);
     }
+    if (dto.platform !== undefined) {
+      await this.assertSearchPlatform(dto.platform);
+    }
     const data: Prisma.JobSearchSessionUpdateInput = {};
     if (dto.platform !== undefined) {
       data.platform = dto.platform;
@@ -151,5 +166,12 @@ export class SearchSessionsService {
   async remove(id: string): Promise<void> {
     await this.findOne(id);
     await this.prisma.jobSearchSession.delete({ where: { id } });
+  }
+
+  private async assertSearchPlatform(platform: string): Promise<void> {
+    const fc = (await this.platformSettings.getFormConfig()) as FormConfigDto;
+    if (!allSearchPlatformIds(fc).has(platform)) {
+      throw new BadRequestException('Invalid search session platform');
+    }
   }
 }

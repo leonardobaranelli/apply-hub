@@ -33,7 +33,8 @@ export const EmploymentType = {
   INTERNSHIP: 'internship',
   FREELANCE: 'freelance',
 } as const;
-export type EmploymentType = (typeof EmploymentType)[keyof typeof EmploymentType];
+export type EmploymentType =
+  (typeof EmploymentType)[keyof typeof EmploymentType];
 
 export const ApplicationStatus = {
   APPLIED: 'applied',
