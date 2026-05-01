@@ -30,6 +30,7 @@ services:
     environment:
       NODE_ENV: ${NODE_ENV:-development}
       DATABASE_URL: ${DATABASE_URL:-postgresql://applyhub:applyhub_dev@postgres:5432/applyhub?schema=public}
+      DATABASE_URL_REPLICA: ${DATABASE_URL_REPLICA:-}
       DATABASE_LOGGING: ${DATABASE_LOGGING:-false}
       PORT: 3001
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173}

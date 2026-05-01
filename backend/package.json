@@ -16,7 +16,15 @@
     "prisma:migrate:dev": "prisma migrate dev",
     "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
-    "seed": "ts-node -r tsconfig-paths/register src/database/seed.ts"
+    "seed": "ts-node -r tsconfig-paths/register src/database/seed.ts",
+    "prisma:db:push:render": "node scripts/run-on-render.mjs npx prisma db push --skip-generate",
+    "prisma:studio:render": "node scripts/run-on-render.mjs npx prisma studio",
+    "seed:render": "node scripts/run-on-render.mjs npm run seed",
+    "db:sync:local-to-render": "node scripts/db-sync.mjs local-to-render",
+    "db:sync:render-to-local": "node scripts/db-sync.mjs render-to-local",
+    "db:sync:incremental:local-to-render": "node scripts/db-sync-incremental.mjs local-to-render",
+    "db:sync:incremental:render-to-local": "node scripts/db-sync-incremental.mjs render-to-local",
+    "db:status": "node scripts/db-status.mjs"
   },
   "dependencies": {
     "@nestjs/common": "^10.4.15",
