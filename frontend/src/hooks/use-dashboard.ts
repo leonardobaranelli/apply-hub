@@ -12,3 +12,10 @@ export function useDashboard(params: Params = {}) {
     queryFn: () => dashboardApi.getOverview(params),
   });
 }
+
+export function useSearchActivity(params: Params = {}) {
+  return useQuery({
+    queryKey: ['dashboard', 'search-activity', params],
+    queryFn: () => dashboardApi.getSearchActivity(params),
+  });
+}

@@ -1,9 +1,12 @@
+import type { SearchPlatform } from '@prisma/client';
 import {
   ApplicationMethod,
   ApplicationStatus,
   PositionType,
   WorkMode,
 } from '../applications/domain/application.enums';
+
+export type SearchCompletionKey = 'complete' | 'incomplete';
 
 export interface KpiSummary {
   total: number;
@@ -72,4 +75,27 @@ export interface DashboardOverview {
   methodEffectiveness: MethodEffectiveness[];
   topCompanies: TopCompany[];
   upcomingFollowUps: number;
+}
+
+export interface SearchSessionSummary {
+  id: string;
+  platform: SearchPlatform;
+  platformOther: string | null;
+  queryTitle: string;
+  searchedAt: string;
+  isComplete: boolean;
+  applicationsCount: number;
+  filterDescription: string | null;
+  jobPostedFrom: string;
+  resultsApproxCount: number | null;
+}
+
+export interface SearchActivityOverview {
+  totalSessions: number;
+  linkedApplicationsCount: number;
+  byPlatform: DistributionItem<SearchPlatform>[];
+  byCompletion: DistributionItem<SearchCompletionKey>[];
+  searchesPerDay: TimeSeriesPoint[];
+  topQueries: Array<{ queryTitle: string; count: number }>;
+  recentSessions: SearchSessionSummary[];
 }

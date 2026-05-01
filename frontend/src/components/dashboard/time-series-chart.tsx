@@ -17,13 +17,14 @@ interface Point {
 
 interface Props {
   data: Point[];
+  title?: string;
 }
 
-export function TimeSeriesChart({ data }: Props) {
+export function TimeSeriesChart({ data, title = 'Applications per day' }: Props) {
   return (
     <Card className="h-full">
       <CardHeader>
-        <CardTitle>Applications per day</CardTitle>
+        <CardTitle>{title}</CardTitle>
       </CardHeader>
       <CardContent className="h-72">
         {data.length === 0 ? (

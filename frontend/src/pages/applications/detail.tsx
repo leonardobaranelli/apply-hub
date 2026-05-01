@@ -45,6 +45,7 @@ import {
   methodLabels,
   positionLabels,
   priorityLabels,
+  searchPlatformLabels,
   stageLabels,
   workModeLabels,
 } from '@/types/labels';
@@ -246,6 +247,32 @@ export function ApplicationDetailPage() {
               ) : null}
               {application.source ? (
                 <Row label="Source" value={application.source} />
+              ) : null}
+              {application.jobSearchSession ? (
+                <Row
+                  label="Search session"
+                  value={
+                    <span className="text-right">
+                      <span className="font-medium text-foreground">
+                        {searchPlatformLabels[application.jobSearchSession.platform]}
+                        {application.jobSearchSession.platform === 'other' &&
+                        application.jobSearchSession.platformOther
+                          ? ` (${application.jobSearchSession.platformOther})`
+                          : ''}
+                        : {application.jobSearchSession.queryTitle}
+                      </span>
+                      <span className="mt-0.5 block text-xs text-muted-foreground">
+                        {formatDateTime(application.jobSearchSession.searchedAt)}
+                      </span>
+                      <Link
+                        to="/search-sessions"
+                        className="mt-1 inline-block text-xs text-primary hover:underline"
+                      >
+                        View logged searches
+                      </Link>
+                    </span>
+                  }
+                />
               ) : null}
               {application.resumeVersion ? (
                 <Row label="Resume" value={application.resumeVersion} />

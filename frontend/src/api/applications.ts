@@ -39,6 +39,7 @@ export interface CreateApplicationInput {
   contactEmail?: string | null;
   contactPhone?: string | null;
   contactOther?: string | null;
+  jobSearchSessionId?: string | null;
 }
 
 export type UpdateApplicationInput = Partial<CreateApplicationInput>;
@@ -133,9 +134,12 @@ export const applicationsApi = {
     id: string,
     input: UpdateApplicationInput,
   ): Promise<JobApplication> => {
+    const body = Object.fromEntries(
+      Object.entries(input).filter(([, v]) => v !== undefined),
+    );
     const { data } = await api.patch<JobApplication>(
       `/applications/${id}`,
-      input,
+      body,
     );
     return data;
   },
