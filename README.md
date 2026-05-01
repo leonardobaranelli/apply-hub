@@ -1,53 +1,100 @@
 # ApplyHub
 
-Personal full-stack hub to record, organize and analyze every job application you make as a developer. It's designed to be the control center of your job search: every application, every movement, every metric.
+A personal, full‑stack control center for a developer's job search. ApplyHub treats every application as a first‑class entity with status, stage, timeline, contacts and the search session that produced it, so the lifecycle of each opportunity — and the patterns across all of them — stay queryable from one place.
+
+## What it solves
+
+Job searching produces a lot of short‑lived context: an open posting tab, a recruiter message, a follow‑up TODO, a resume version, the search filters that surfaced the role. ApplyHub captures that context as data:
+
+- Every application has a typed **status** (applied → screening → interview → offer → accepted, with branches to rejected/ghosted/on_hold) and a finer **stage** (recruiter screen, take‑home, system design, …).
+- Every status or stage change is recorded as an immutable **event** in the application timeline.
+- Every search you run can be logged as a **session** (platform, query, filters, posted‑from window, completion) and linked to the applications it produced, so analytics cover both the pipeline and the activity that feeds it.
+- Cross‑cutting selector vocabularies (application method, position type, employment type, search platform, role title, resume version) live in a single **platform settings** document that the UI reads at runtime — vocabulary changes never require code changes.
+
+## Domain model
+
+Six aggregates, defined in `backend/prisma/schema.prisma`:
+
+| Aggregate          | Purpose |
+| ------------------ | ------- |
+| `JobApplication`   | One opportunity. Owns status/stage/priority, salary band, denormalized vacancy contact, optional link to a search session. |
+| `JobSearchSession` | A logged search (platform, query, filters, posted‑from window). Aggregates the applications produced from it. |
+| `ApplicationEvent` | Append‑only audit of every status/stage change, message, interview, note. Drives the timeline view. |
+| `Contact`          | Reusable people (recruiters, hiring managers, referrals) attachable to many applications. |
+| `Template`         | Reusable copy (cover letters, follow‑ups, outreach) with usage stats and favorites. |
+| `PlatformSettings` | Single‑row configuration: appearance, color preset, custom selector vocabularies. |
+
+Status transitions and derived fields (`firstResponseAt`, `lastActivityAt`, `closedAt`, `archivedAt`) are owned by a status resolver under `applications/domain/`, not scattered across controllers.
 
 ## Stack
 
-- **Backend**: NestJS + Prisma + PostgreSQL + TypeScript (Clean Architecture, SOLID)
-- **Frontend**: React + Vite + TailwindCSS + TypeScript (TanStack Query, React Hook Form + Zod, Recharts)
-- **Infra**: Docker + docker-compose
+- **API**: NestJS 10, Prisma 5, PostgreSQL 16, class‑validator, Swagger.
+- **Web**: React 18 + Vite, TypeScript, TanStack Query, React Hook Form + Zod, Tailwind CSS, Recharts.
+- **Infra**: Docker Compose for local Postgres + API + web; multi‑stage Dockerfiles with `development` and `production` targets.
 
-## Structure
+## Repository layout
 
 ```
 apply-hub/
 ├── backend/
-│   ├── prisma/        # schema.prisma + migrations
-│   └── src/           # NestJS app
-├── frontend/          # React + Vite SPA
-├── docker-compose.yml # Orchestration
-└── .env.example       # Environment variables
+│   ├── prisma/                 # schema.prisma, seed
+│   ├── scripts/                # db sync + replica tooling
+│   └── src/
+│       ├── common/             # filters, shared dto, infra utilities
+│       ├── config/             # env loading + validation
+│       ├── database/           # Prisma module, replica write‑mirror
+│       └── modules/
+│           ├── applications/        # controller / service / dto / domain
+│           ├── application-events/
+│           ├── contacts/
+│           ├── dashboard/
+│           ├── platform-settings/
+│           ├── search-sessions/
+│           └── templates/
+├── frontend/
+│   └── src/
+│       ├── api/                # typed axios clients
+│       ├── components/         # ui + feature components
+│       ├── context/            # platform settings provider
+│       ├── hooks/              # query / mutation hooks
+│       ├── lib/                # query client, theme, helpers
+│       ├── pages/              # routed pages
+│       └── types/              # shared models, enums, labels
+├── docker-compose.yml
+└── .env.example
 ```
 
-## Key features
+Each backend module follows the same shape: `controller → service → dto → domain`. Persistence is owned by the service. Cross‑module rules (e.g. validating a custom selector slug against `PlatformSettings`) are pulled in via injected services, never duplicated.
 
-- **Flexible applications**: log any application (email, LinkedIn Easy Apply, company website, referrals, recruiter outreach, etc.).
-- **Full status pipeline**: applied → screening → assessment → interview → offer → accepted, with branches to rejected/withdrawn/ghosted/on_hold.
-- **Granular stages**: recruiter screen, take-home, tech interview 1/2, system design, behavioral, final round, etc.
-- **Event timeline**: complete history of every movement (messages sent/received, interviews, feedback, notes).
-- **Reusable contacts**: link contacts to multiple applications.
-- **Templates**: cover letters, LinkedIn messages and follow-ups with one-click copy.
-- **Applications dashboard**: KPIs (response rate, interview rate, offer rate), conversion funnel, distributions, activity heatmap, top companies/platforms.
-- **Search activity dashboard**: companion view for **job search sessions**—log where and what you searched, when, and whether each session is still **active** or marked **complete**; see how search activity sits alongside your pipeline. Sessions link to applications when you want that context; **New application** defaults to the latest active session (you can pick another or none).
-- **Settings**: **appearance** (dark, dim, light) × **six color presets** (Ocean default, Violet, Emerald, Rose, Amber, Slate), persisted in the browser and on the server. Configurable **form and filter options** with custom slugs where allowed: **application method**, **position type**, **employment type**, **search session platform**, **role title** list, **resume used** list, plus **work mode** label overrides—reorder, rename labels, hide entries, or add custom ids (validated against the API).
+## API
 
-## Quick start
+OpenAPI is exposed at `http://localhost:3001/api/docs` once the backend is running.
+
+| Resource             | Paths                                                                 |
+| -------------------- | --------------------------------------------------------------------- |
+| Applications         | `/applications`, `/applications/:id`, `/applications/:id/status`      |
+| Application events   | `/applications/:id/events`                                            |
+| Search sessions      | `/search-sessions`, `/search-sessions/:id`                            |
+| Contacts             | `/contacts`, `/contacts/:id`                                          |
+| Templates            | `/templates`, `/templates/:id`                                        |
+| Dashboard            | `/dashboard`, `/dashboard/search-activity`                            |
+| Platform settings    | `/platform-settings`                                                  |
+
+All list endpoints accept pagination, search and filter query parameters; payloads are validated by class‑validator DTOs and mirrored on the client by Zod schemas.
+
+## Quick start (Docker)
 
 ```bash
 cp .env.example .env
 docker compose up --build
 ```
 
-The backend container automatically:
-1. Generates the Prisma client.
-2. Runs `prisma db push` to apply the schema.
-3. Starts NestJS in watch mode.
+The backend container generates the Prisma client, runs `prisma db push`, and starts Nest in watch mode. Default endpoints:
 
-- Frontend: http://localhost:5173
-- Backend (API): http://localhost:3001/api
-- API docs (Swagger): http://localhost:3001/api/docs
-- Postgres: localhost:5432
+- Web: `http://localhost:5173`
+- API: `http://localhost:3001/api`
+- Swagger: `http://localhost:3001/api/docs`
+- Postgres: `localhost:5432`
 
 ## Local development without Docker
 
@@ -65,124 +112,78 @@ npm install
 npm run dev
 ```
 
-## Useful scripts
+## Configuration
 
-Inside `backend/`:
+| Variable               | Purpose                                                            |
+| ---------------------- | ------------------------------------------------------------------ |
+| `DATABASE_URL`         | Primary Postgres connection (required).                            |
+| `DATABASE_URL_REPLICA` | Optional secondary Postgres for write mirroring.                   |
+| `DATABASE_LOGGING`     | Enable Prisma query logs.                                          |
+| `BACKEND_PORT`         | API port (default `3001`).                                         |
+| `CORS_ORIGIN`          | Allowed origin for the web app (default `http://localhost:5173`).  |
+| `FRONTEND_PORT`        | Vite dev server port (default `5173`).                             |
+| `VITE_API_URL`         | Base URL the SPA calls (default `http://localhost:3001/api`).      |
 
-- `npm run prisma:generate` — regenerate Prisma client after schema changes.
-- `npm run prisma:db:push` — push schema to the DB without creating a migration (dev).
+`.env.example` ships defaults for the Docker setup; copy and adjust per environment.
+
+## Backend scripts
+
+Run from `backend/`:
+
+- `npm run start:dev` — Nest in watch mode.
+- `npm run build` / `npm run start:prod` — production build and run.
+- `npm run prisma:generate` — regenerate the typed Prisma client.
+- `npm run prisma:db:push` — apply schema without a migration (dev).
 - `npm run prisma:migrate:dev` — create a versioned migration.
-- `npm run prisma:studio` — open Prisma Studio (from your PC it rewrites `postgres` → `127.0.0.1` using `POSTGRES_PORT`; inside a container it leaves the URL as-is).
+- `npm run prisma:migrate:deploy` — apply pending migrations (prod).
+- `npm run prisma:studio` — open Prisma Studio against the primary.
 - `npm run seed` — seed default templates.
-- `npm run lint` / `npm run build` — quality checks.
 
-## Replica / live backup database
+## Replica / live backup
 
-ApplyHub can mirror every successful write on the primary database to a
-secondary one (e.g. a managed Postgres replica) so you always have a hot
-standby. Reads always go to the primary; the replica is updated
-asynchronously after each `create` / `update` / `delete`.
+ApplyHub can mirror every successful write on the primary database to a secondary Postgres (typically a managed replica). Reads always go to the primary; the replica is updated asynchronously after each `create` / `update` / `delete`. The application is the source of truth — the replica exists for recovery, not failover.
 
-### Current status 
+### Enabling
 
-- **Primary DB**: local Postgres (`DATABASE_URL`).
-- **Secondary DB**: replica Postgres (`DATABASE_URL_REPLICA`).
-- **Normal work**: app writes to local and mirrors to the replica automatically.
-- **Validation**: tested end-to-end (auto mirror + local->replica + replica->local).
-- **Fast checks**: run `npm run db:status` inside `backend` to confirm parity.
-
-### Command cheat sheet (all key commands)
-
-Run from `backend/` unless stated otherwise:
-
-```bash
-# 1) Bring services up (from repo root)
-docker compose up -d postgres backend
-
-# 2) Check local vs replica parity
-docker compose exec backend npm run db:status
-
-# 3) Normal/fast sync (incremental, recommended day-to-day)
-docker compose exec backend npm run db:sync:incremental:local-to-replica
-docker compose exec backend npm run db:sync:incremental:replica-to-local
-
-# 4) Full snapshot sync (recovery / heavy drift)
-npm --prefix backend run db:sync:local-to-replica
-npm --prefix backend run db:sync:replica-to-local
-
-# 5) Replica schema + seed (one-time or when needed)
-docker compose exec backend npm run prisma:db:push:replica
-docker compose exec backend npm run seed:replica
-
-# 6) Open Prisma Studio on replica
-docker compose exec backend npm run prisma:studio:replica
-```
-
-### How to enable it
-
-1. Get the **External Database URL** from your provider dashboard
-   (avoid internal/private URLs that only work inside hosted networks).
-2. Set `DATABASE_URL_REPLICA` in `.env`, appending `?sslmode=require`:
+1. Obtain the **external** URL of the secondary database (`?sslmode=require` if your provider requires it).
+2. Set it in `.env`:
    ```env
-   DATABASE_URL_REPLICA=postgresql://user:pass@your-replica-host:5432/db?sslmode=require
+   DATABASE_URL_REPLICA=postgresql://user:pass@replica-host:5432/db?sslmode=require
    ```
-3. Push the schema to the replica (one-time):
+3. Apply the schema once:
    ```bash
    cd backend
    npm run prisma:db:push:replica
    ```
-4. (Optional) Copy existing data over once:
-   ```bash
-   npm run db:sync:local-to-replica
-   ```
-5. Restart the backend (`docker compose up -d --build backend`).
-   On startup you should see `Prisma connected (replica)` in the logs.
+4. Restart the backend. You should see `Prisma connected (replica)` on startup.
 
-From now on every write made through the app is replicated automatically.
-
-### Manual reconciliation
-
-If the replica falls out of sync (e.g. it was unreachable for a while), you
-can do a full data refresh in either direction:
+### Day‑to‑day
 
 ```bash
-cd backend
-npm run db:sync:local-to-replica    # push local snapshot to replica
-npm run db:sync:replica-to-local    # restore from replica to local
-```
+# parity check between primary and replica
+npm run db:status
 
-These scripts run `pg_dump | psql` inside a one-off `postgres:18-alpine`
-container, so you don't need PostgreSQL client tools installed on your host.
-
-### Incremental reconciliation (faster day-to-day)
-
-For regular syncs, you can run an incremental mode that:
-
-- upserts by `id`,
-- only updates when source `updatedAt` is newer than target,
-- inserts missing rows in the application-contact pivot table.
-
-```bash
-cd backend
+# incremental reconciliation (upsert by id, only when source.updatedAt is newer)
 npm run db:sync:incremental:local-to-replica
 npm run db:sync:incremental:replica-to-local
+
+# full snapshot (recovery or heavy drift) — pg_dump | psql in a one-off container
+npm run db:sync:local-to-replica
+npm run db:sync:replica-to-local
 ```
 
-Use this for frequent syncs. Keep full snapshot sync for disaster recovery
-or when you suspect heavy drift.
+### Replica‑targeted utilities
 
-### Other replica-targeted scripts
-
-- `npm run prisma:studio:replica` — Prisma Studio against the replica database.
-- `npm run seed:replica` — seed default templates into the replica database.
+- `npm run prisma:studio:replica`
+- `npm run seed:replica`
 
 ### Caveats
 
-- Replication is **eventually consistent** (fire-and-forget after the local
-  write succeeds). If the replica is briefly unreachable, those writes will
-  be missing until you run `db:sync:local-to-replica`.
-- The primary is always the source of truth. To switch the app to the
-  replica during a local outage, swap `DATABASE_URL` to the replica URL and
-  restart the backend.
+- Replication is **eventually consistent**: if the replica is briefly unreachable, those writes need a manual reconciliation.
+- To switch the app to the replica during a primary outage, swap `DATABASE_URL` to the replica URL and restart the backend.
 
-> Authentication is intentionally disabled — this is meant to run locally as a personal tool.
+## Operational notes
+
+- Authentication is intentionally disabled. ApplyHub is designed as a single‑operator hub; deploy it behind a network boundary you control.
+- Database migrations: use `prisma migrate dev` for new schema changes; `db push` is reserved for local iteration. The replica path mirrors writes only — schema changes must be applied to both databases.
+- Logs: Prisma query logs are gated by `DATABASE_LOGGING`. The default Nest logger is used elsewhere.
