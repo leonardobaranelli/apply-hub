@@ -26,6 +26,7 @@ import { ApplicationForm } from '@/components/applications/application-form';
 import { StatusChanger } from '@/components/applications/status-changer';
 import { Timeline } from '@/components/applications/timeline';
 import { StatusBadge } from '@/components/status/status-badge';
+import { usePlatformSettings } from '@/context/platform-settings-context';
 import {
   useApplication,
   useArchiveApplication,
@@ -41,17 +42,17 @@ import {
 } from '@/lib/format';
 import {
   employmentLabels,
-  methodLabels,
   positionLabels,
   priorityLabels,
   searchCompletionLabels,
   searchPlatformLabels,
   stageLabels,
-  workModeLabels,
 } from '@/types/labels';
 import type { JobApplication } from '@/types/models';
 
 export function ApplicationDetailPage() {
+  const { effectiveMethodLabels, effectiveWorkModeLabels } =
+    usePlatformSettings();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { data: application, isLoading } = useApplication(id);
@@ -144,8 +145,8 @@ export function ApplicationDetailPage() {
               <MapPin size={14} /> {application.location}
             </span>
           ) : null}
-          <span>{workModeLabels[application.workMode]}</span>
-          <span>· {methodLabels[application.applicationMethod]}</span>
+          <span>{effectiveWorkModeLabels[application.workMode]}</span>
+          <span>· {effectiveMethodLabels[application.applicationMethod]}</span>
           {application.jobUrl ? (
             <a
               href={application.jobUrl}

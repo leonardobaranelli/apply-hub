@@ -22,18 +22,17 @@ import { FunnelChart } from '@/components/dashboard/funnel-chart';
 import { KpiCard } from '@/components/dashboard/kpi-card';
 import { TimeSeriesChart } from '@/components/dashboard/time-series-chart';
 import { PageHeader } from '@/components/layout/page-header';
+import { usePlatformSettings } from '@/context/platform-settings-context';
 import { useDashboard, useSearchActivity } from '@/hooks/use-dashboard';
 import { useMarkStaleAsGhosted } from '@/hooks/use-applications';
 import { cn } from '@/lib/cn';
 import { formatDate, formatDateTime, formatNumber } from '@/lib/format';
 import type { SearchSessionSummary } from '@/types/models';
 import {
-  methodLabels,
   positionLabels,
   searchCompletionLabels,
   searchPlatformLabels,
   statusLabels,
-  workModeLabels,
 } from '@/types/labels';
 
 type DashboardTab = 'pipeline' | 'search';
@@ -146,6 +145,8 @@ function PipelineDashboardPanel({
   fromDate?: string;
   toDate?: string;
 }) {
+  const { effectiveMethodLabels, effectiveWorkModeLabels } =
+    usePlatformSettings();
   const { data, isLoading, isError } = useDashboard({ fromDate, toDate });
   const ghostMutation = useMarkStaleAsGhosted();
 
@@ -249,7 +250,7 @@ function PipelineDashboardPanel({
           title="By application method"
           items={byMethod.map((m) => ({
             key: m.key,
-            label: methodLabels[m.key],
+            label: effectiveMethodLabels[m.key],
             count: m.count,
             percentage: m.percentage,
           }))}
@@ -267,7 +268,7 @@ function PipelineDashboardPanel({
           title="By work mode"
           items={byWorkMode.map((w) => ({
             key: w.key,
-            label: workModeLabels[w.key],
+            label: effectiveWorkModeLabels[w.key],
             count: w.count,
             percentage: w.percentage,
           }))}
@@ -299,7 +300,9 @@ function PipelineDashboardPanel({
                   <tbody>
                     {data.methodEffectiveness.map((m) => (
                       <tr key={m.method} className="border-b border-border/50">
-                        <td className="py-2 pr-3">{methodLabels[m.method]}</td>
+                        <td className="py-2 pr-3">
+                          {effectiveMethodLabels[m.method]}
+                        </td>
                         <td className="py-2 pr-3 text-right font-medium">
                           {m.total}
                         </td>

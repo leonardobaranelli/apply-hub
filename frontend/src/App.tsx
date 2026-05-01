@@ -4,6 +4,7 @@ import { DashboardPage } from '@/pages/dashboard';
 import { ApplicationsListPage } from '@/pages/applications/list';
 import { ApplicationDetailPage } from '@/pages/applications/detail';
 import { SearchSessionsPage } from '@/pages/search-sessions';
+import { SettingsPage } from '@/pages/settings';
 import { TemplatesPage } from '@/pages/templates';
 
 export default function App() {
@@ -15,6 +16,7 @@ export default function App() {
         <Route path="/applications/:id" element={<ApplicationDetailPage />} />
         <Route path="/search-sessions" element={<SearchSessionsPage />} />
         <Route path="/templates" element={<TemplatesPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

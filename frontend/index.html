@@ -1,6 +1,17 @@
 <!doctype html>
 <html lang="en" class="dark">
   <head>
+    <script>
+      (function () {
+        var presets = ['ocean', 'violet', 'emerald', 'rose', 'amber', 'slate'];
+        var t = 'ocean';
+        try {
+          var s = localStorage.getItem('applyhub-theme');
+          if (s && presets.indexOf(s) >= 0) t = s;
+        } catch (e) {}
+        document.documentElement.classList.add('theme-preset-' + t);
+      })();
+    </script>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />

@@ -9,12 +9,11 @@ import {
   Priority,
   WorkMode,
 } from '@/types/enums';
+import { usePlatformSettings } from '@/context/platform-settings-context';
 import {
-  methodLabels,
   positionLabels,
   priorityLabels,
   statusLabels,
-  workModeLabels,
 } from '@/types/labels';
 import type { ApplicationFilters as Filters } from '@/api/applications';
 
@@ -34,6 +33,8 @@ const enumOpts = <T extends Record<string, string>>(
 ];
 
 export function ApplicationFiltersBar({ value, onChange }: Props) {
+  const { methodSelectOptions, workModeSelectOptions } = usePlatformSettings();
+
   const update = <K extends keyof Filters>(key: K, val: Filters[K]): void => {
     onChange({ ...value, [key]: val, page: 1 });
   };
@@ -97,7 +98,13 @@ export function ApplicationFiltersBar({ value, onChange }: Props) {
             onChange={(e) =>
               updateSingleArray<ApplicationMethod>('method', e.target.value)
             }
-            options={enumOpts(ApplicationMethod, methodLabels)}
+            options={[
+              allOption,
+              ...methodSelectOptions.map((o) => ({
+                value: o.value,
+                label: o.label,
+              })),
+            ]}
             className="h-9 min-w-[180px]"
           />
           <Select
@@ -105,7 +112,13 @@ export function ApplicationFiltersBar({ value, onChange }: Props) {
             onChange={(e) =>
               updateSingleArray<WorkMode>('workMode', e.target.value)
             }
-            options={enumOpts(WorkMode, workModeLabels)}
+            options={[
+              allOption,
+              ...workModeSelectOptions.map((o) => ({
+                value: o.value,
+                label: o.label,
+              })),
+            ]}
             className="h-9 min-w-[120px]"
           />
           <Select
