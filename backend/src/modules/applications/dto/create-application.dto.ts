@@ -11,6 +11,7 @@ import {
   IsOptional,
   IsString,
   IsUrl,
+  IsUUID,
   Max,
   MaxLength,
   Min,
@@ -202,4 +203,12 @@ export class CreateApplicationDto {
   @IsOptional()
   @IsString()
   contactOther?: string;
+
+  @ApiPropertyOptional({
+    nullable: true,
+    description: 'Optional link to a logged job search session',
+  })
+  @IsOptional()
+  @IsUUID()
+  jobSearchSessionId?: string | null;
 }

@@ -13,7 +13,11 @@ import {
   useCreateApplication,
 } from '@/hooks/use-applications';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
-import type { ApplicationFilters } from '@/api/applications';
+import type {
+  ApplicationFilters,
+  CreateApplicationInput,
+  UpdateApplicationInput,
+} from '@/api/applications';
 
 export function ApplicationsListPage() {
   const [filters, setFilters] = useState<ApplicationFilters>({
@@ -34,8 +38,10 @@ export function ApplicationsListPage() {
 
   const { data, isLoading } = useApplicationsList(queryFilters);
 
-  const handleCreate = async (input: Parameters<typeof createMutation.mutateAsync>[0]): Promise<void> => {
-    await createMutation.mutateAsync(input);
+  const handleCreate = async (
+    input: CreateApplicationInput | UpdateApplicationInput,
+  ): Promise<void> => {
+    await createMutation.mutateAsync(input as CreateApplicationInput);
     setOpenCreate(false);
   };
 

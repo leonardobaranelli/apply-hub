@@ -40,6 +40,7 @@ export function useCreateApplication() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: applicationKeys.lists() });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['search-sessions'] });
       toast.success('Application created');
     },
   });
@@ -53,6 +54,8 @@ export function useUpdateApplication(id: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: applicationKeys.detail(id) });
       queryClient.invalidateQueries({ queryKey: applicationKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: ['search-sessions'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       toast.success('Application updated');
     },
   });

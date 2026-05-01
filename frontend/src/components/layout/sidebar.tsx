@@ -3,6 +3,7 @@ import {
   Briefcase,
   FileText,
   LayoutDashboard,
+  Search,
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
@@ -17,6 +18,7 @@ interface NavItem {
 const navItems: ReadonlyArray<NavItem> = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
   { to: '/applications', label: 'Applications', icon: Briefcase },
+  { to: '/search-sessions', label: 'Search sessions', icon: Search },
   { to: '/templates', label: 'Templates', icon: FileText },
 ];
 
