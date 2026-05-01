@@ -70,7 +70,7 @@ Inside `backend/`:
 - `npm run prisma:generate` — regenerate Prisma client after schema changes.
 - `npm run prisma:db:push` — push schema to the DB without creating a migration (dev).
 - `npm run prisma:migrate:dev` — create a versioned migration.
-- `npm run prisma:studio` — open Prisma Studio.
+- `npm run prisma:studio` — open Prisma Studio (from your PC it rewrites `postgres` → `127.0.0.1` using `POSTGRES_PORT`; inside a container it leaves the URL as-is).
 - `npm run seed` — seed default templates.
 - `npm run lint` / `npm run build` — quality checks.
 
