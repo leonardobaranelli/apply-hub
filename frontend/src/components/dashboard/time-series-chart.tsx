@@ -46,15 +46,15 @@ export function TimeSeriesChart({ data }: Props) {
               <Tooltip
                 labelFormatter={(d) => formatDate(d as string)}
                 contentStyle={{
-                  background: 'rgb(15, 23, 42)',
-                  border: '1px solid rgba(255,255,255,0.1)',
+                  background: 'hsl(220 12% 8%)',
+                  border: '1px solid hsl(220 10% 20%)',
                   borderRadius: 8,
                 }}
               />
               <Line
                 type="monotone"
                 dataKey="count"
-                stroke="hsl(217 91% 60%)"
+                stroke="hsl(188 86% 48%)"
                 strokeWidth={2}
                 dot={false}
               />
