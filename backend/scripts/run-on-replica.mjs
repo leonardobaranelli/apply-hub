@@ -2,14 +2,14 @@
 /**
  * Runs any command with `DATABASE_URL` swapped to the value of
  * `DATABASE_URL_REPLICA` from the project root `.env`. Used to point Prisma
- * tooling (db push, studio, seed, ...) at the Render-hosted replica without
+ * tooling (db push, studio, seed, ...) at the secondary/replica DB without
  * duplicating env files.
  *
  * Usage:
- *   node scripts/run-on-render.mjs <command> [args...]
+ *   node scripts/run-on-replica.mjs <command> [args...]
  *
  * Example:
- *   node scripts/run-on-render.mjs npx prisma db push --skip-generate
+ *   node scripts/run-on-replica.mjs npx prisma db push --skip-generate
  */
 import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
@@ -46,14 +46,14 @@ const replicaUrl = process.env.DATABASE_URL_REPLICA || fileEnv.DATABASE_URL_REPL
 if (!replicaUrl) {
   console.error(
     '\u2717 DATABASE_URL_REPLICA is not set in .env (or current env).\n' +
-      '  Add the Render external URL to .env and try again.',
+      '  Add your secondary database URL to .env and try again.',
   );
   process.exit(1);
 }
 
 const [, , command, ...args] = process.argv;
 if (!command) {
-  console.error('Usage: node scripts/run-on-render.mjs <command> [args...]');
+  console.error('Usage: node scripts/run-on-replica.mjs <command> [args...]');
   process.exit(1);
 }
 
