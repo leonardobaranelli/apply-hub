@@ -15,7 +15,7 @@
     "prisma:db:push": "prisma db push --skip-generate",
     "prisma:migrate:dev": "prisma migrate dev",
     "prisma:migrate:deploy": "prisma migrate deploy",
-    "prisma:studio": "prisma studio",
+    "prisma:studio": "node scripts/prisma-studio-local.mjs",
     "seed": "ts-node -r tsconfig-paths/register src/database/seed.ts",
     "prisma:db:push:render": "node scripts/run-on-render.mjs npx prisma db push --skip-generate",
     "prisma:studio:render": "node scripts/run-on-render.mjs npx prisma studio",
