@@ -7,6 +7,12 @@ export interface AppConfig {
 
 export interface DatabaseConfig {
   url: string;
+  /**
+   * Optional secondary database (e.g. Render-hosted Postgres) used as a live
+   * mirror. When set, every successful write on the primary is replicated
+   * asynchronously by `PrismaService`.
+   */
+  replicaUrl: string | null;
   logging: boolean;
 }
 
@@ -18,6 +24,9 @@ export const configuration = (): AppConfig => ({
     url:
       process.env.DATABASE_URL ??
       'postgresql://applyhub:applyhub_dev@localhost:5432/applyhub?schema=public',
+    replicaUrl: process.env.DATABASE_URL_REPLICA?.trim()
+      ? process.env.DATABASE_URL_REPLICA.trim()
+      : null,
     logging: process.env.DATABASE_LOGGING === 'true',
   },
 });
