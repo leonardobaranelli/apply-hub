@@ -3,6 +3,7 @@ import type {
   ApplicationStage,
   ApplicationStatus,
   EventChannel,
+  JobPostingLanguage,
   Priority,
   WorkMode,
 } from '@/types/enums';
@@ -31,6 +32,7 @@ export interface CreateApplicationInput {
   tags?: string[];
   notes?: string | null;
   resumeVersion?: string | null;
+  postingLanguage?: JobPostingLanguage | null;
   contactName?: string | null;
   contactLinkedin?: string | null;
   contactEmail?: string | null;

@@ -84,6 +84,14 @@ export const Priority = {
 } as const;
 export type Priority = (typeof Priority)[keyof typeof Priority];
 
+/** Language of the vacancy / job posting text */
+export const JobPostingLanguage = {
+  EN: 'en',
+  ES: 'es',
+} as const;
+export type JobPostingLanguage =
+  (typeof JobPostingLanguage)[keyof typeof JobPostingLanguage];
+
 export const TemplateType = {
   COVER_LETTER: 'cover_letter',
   EMAIL: 'email',
