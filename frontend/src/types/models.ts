@@ -8,6 +8,8 @@ import type {
   EventChannel,
   PositionType,
   Priority,
+  SearchCompletionKey,
+  SearchPlatform,
   TemplateType,
   WorkMode,
 } from './enums';
@@ -37,6 +39,22 @@ export interface ApplicationEvent {
   description: string | null;
   occurredAt: string;
   metadata: Record<string, unknown> | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface JobSearchSession {
+  id: string;
+  platform: SearchPlatform;
+  platformOther: string | null;
+  queryTitle: string;
+  filterDescription: string | null;
+  jobPostedFrom: string;
+  searchedAt: string;
+  resultsApproxCount: number | null;
+  isComplete: boolean;
+  searchUrl: string | null;
+  notes: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -76,6 +94,14 @@ export interface JobApplication {
   lastActivityAt: string | null;
   closedAt: string | null;
   archivedAt: string | null;
+  jobSearchSessionId: string | null;
+  jobSearchSession?: {
+    id: string;
+    queryTitle: string;
+    platform: SearchPlatform;
+    platformOther: string | null;
+    searchedAt: string;
+  } | null;
   contacts?: Contact[];
   createdAt: string;
   updatedAt: string;
@@ -138,4 +164,35 @@ export interface DashboardOverview {
     activeCount: number;
   }>;
   upcomingFollowUps: number;
+}
+
+export interface SearchSessionSummary {
+  id: string;
+  platform: SearchPlatform;
+  platformOther: string | null;
+  queryTitle: string;
+  searchedAt: string;
+  isComplete: boolean;
+  applicationsCount: number;
+  filterDescription: string | null;
+  jobPostedFrom: string;
+  resultsApproxCount: number | null;
+}
+
+export interface SearchActivityOverview {
+  totalSessions: number;
+  linkedApplicationsCount: number;
+  byPlatform: Array<{
+    key: SearchPlatform;
+    count: number;
+    percentage: number;
+  }>;
+  byCompletion: Array<{
+    key: SearchCompletionKey;
+    count: number;
+    percentage: number;
+  }>;
+  searchesPerDay: Array<{ date: string; count: number }>;
+  topQueries: Array<{ queryTitle: string; count: number }>;
+  recentSessions: SearchSessionSummary[];
 }

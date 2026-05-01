@@ -8,6 +8,8 @@ import type {
   EventChannel,
   PositionType,
   Priority,
+  SearchCompletionKey,
+  SearchPlatform,
   TemplateType,
   WorkMode,
 } from './enums';
@@ -143,4 +145,20 @@ export const contactRoleLabels: Record<ContactRole, string> = {
   engineer: 'Engineer',
   referral: 'Referral',
   other: 'Other',
+};
+
+export const searchPlatformLabels: Record<SearchPlatform, string> = {
+  linkedin: 'LinkedIn',
+  google: 'Google',
+  indeed: 'Indeed',
+  glassdoor: 'Glassdoor',
+  job_board: 'Job board',
+  company_site: 'Company site',
+  recruiter_portal: 'Recruiter portal',
+  other: 'Other',
+};
+
+export const searchCompletionLabels: Record<SearchCompletionKey, string> = {
+  complete: 'Complete',
+  incomplete: 'Incomplete',
 };

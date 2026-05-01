@@ -1,9 +1,11 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Briefcase,
   CheckCircle2,
   Clock,
   Inbox,
+  Search,
   Sparkles,
   Target,
   TrendingUp,
@@ -20,25 +22,131 @@ import { FunnelChart } from '@/components/dashboard/funnel-chart';
 import { KpiCard } from '@/components/dashboard/kpi-card';
 import { TimeSeriesChart } from '@/components/dashboard/time-series-chart';
 import { PageHeader } from '@/components/layout/page-header';
-import { useDashboard } from '@/hooks/use-dashboard';
+import { useDashboard, useSearchActivity } from '@/hooks/use-dashboard';
 import { useMarkStaleAsGhosted } from '@/hooks/use-applications';
-import { formatNumber } from '@/lib/format';
+import { cn } from '@/lib/cn';
+import { formatDate, formatDateTime, formatNumber } from '@/lib/format';
+import type { SearchSessionSummary } from '@/types/models';
 import {
   methodLabels,
   positionLabels,
+  searchCompletionLabels,
+  searchPlatformLabels,
   statusLabels,
   workModeLabels,
 } from '@/types/labels';
 
+type DashboardTab = 'pipeline' | 'search';
+
+const TABS: ReadonlyArray<{ id: DashboardTab; label: string }> = [
+  { id: 'pipeline', label: 'Pipeline' },
+  { id: 'search', label: 'Search activity' },
+];
+
+function sessionPlatformLabel(s: Pick<SearchSessionSummary, 'platform' | 'platformOther'>): string {
+  if (s.platform === 'other' && s.platformOther?.trim()) {
+    return `${searchPlatformLabels.other} (${s.platformOther.trim()})`;
+  }
+  return searchPlatformLabels[s.platform];
+}
+
 export function DashboardPage() {
+  const [tab, setTab] = useState<DashboardTab>('pipeline');
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
 
-  const { data, isLoading, isError } = useDashboard({
+  const dateParams = {
     fromDate: fromDate || undefined,
     toDate: toDate || undefined,
-  });
+  };
 
+  const dateActions = (
+    <div className="flex flex-wrap items-end gap-2">
+      <div>
+        <Label htmlFor="fromDate">From</Label>
+        <Input
+          id="fromDate"
+          type="date"
+          value={fromDate}
+          onChange={(e) => setFromDate(e.target.value)}
+          className="h-9"
+        />
+      </div>
+      <div>
+        <Label htmlFor="toDate">To</Label>
+        <Input
+          id="toDate"
+          type="date"
+          value={toDate}
+          onChange={(e) => setToDate(e.target.value)}
+          className="h-9"
+        />
+      </div>
+      <Button
+        size="sm"
+        variant="outline"
+        onClick={() => {
+          setFromDate('');
+          setToDate('');
+        }}
+      >
+        Clear
+      </Button>
+    </div>
+  );
+
+  return (
+    <>
+      <PageHeader
+        title="Dashboard"
+        description="Switch between pipeline analytics and logged job-search sessions."
+        actions={dateActions}
+      />
+
+      <div
+        className="mb-4 inline-flex rounded-lg border border-border bg-card p-1"
+        role="tablist"
+        aria-label="Dashboard view"
+      >
+        {TABS.map((t) => {
+          const active = tab === t.id;
+          return (
+            <button
+              key={t.id}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              onClick={() => setTab(t.id)}
+              className={cn(
+                'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+                active
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:text-foreground',
+              )}
+            >
+              {t.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {tab === 'pipeline' ? (
+        <PipelineDashboardPanel {...dateParams} />
+      ) : (
+        <SearchActivityPanel {...dateParams} />
+      )}
+    </>
+  );
+}
+
+function PipelineDashboardPanel({
+  fromDate,
+  toDate,
+}: {
+  fromDate?: string;
+  toDate?: string;
+}) {
+  const { data, isLoading, isError } = useDashboard({ fromDate, toDate });
   const ghostMutation = useMarkStaleAsGhosted();
 
   if (isLoading) return <PageLoader />;
@@ -54,45 +162,6 @@ export function DashboardPage() {
 
   return (
     <>
-      <PageHeader
-        title="Dashboard"
-        description="Global view of your process. Optimize decisions with real data."
-        actions={
-          <div className="flex items-end gap-2">
-            <div>
-              <Label htmlFor="fromDate">From</Label>
-              <Input
-                id="fromDate"
-                type="date"
-                value={fromDate}
-                onChange={(e) => setFromDate(e.target.value)}
-                className="h-9"
-              />
-            </div>
-            <div>
-              <Label htmlFor="toDate">To</Label>
-              <Input
-                id="toDate"
-                type="date"
-                value={toDate}
-                onChange={(e) => setToDate(e.target.value)}
-                className="h-9"
-              />
-            </div>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                setFromDate('');
-                setToDate('');
-              }}
-            >
-              Clear
-            </Button>
-          </div>
-        }
-      />
-
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         <KpiCard
           label="Total"
@@ -303,6 +372,154 @@ export function DashboardPage() {
                 Last run: {ghostMutation.data.ghostedCount} marked.
               </p>
             ) : null}
+          </CardContent>
+        </Card>
+      </div>
+    </>
+  );
+}
+
+function SearchActivityPanel({
+  fromDate,
+  toDate,
+}: {
+  fromDate?: string;
+  toDate?: string;
+}) {
+  const { data, isLoading, isError } = useSearchActivity({ fromDate, toDate });
+
+  if (isLoading) return <PageLoader />;
+  if (isError || !data) {
+    return (
+      <p className="text-sm text-destructive">
+        Could not load search analytics. Is the backend running?
+      </p>
+    );
+  }
+
+  const appsPerSession =
+    data.totalSessions === 0
+      ? 0
+      : Math.round((data.linkedApplicationsCount / data.totalSessions) * 10) / 10;
+
+  return (
+    <>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <p className="text-sm text-muted-foreground">
+          Date range applies to when the search was logged (
+          <code className="text-xs">searchedAt</code>).
+        </p>
+        <Link
+          to="/search-sessions"
+          className={cn(
+            'inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-transparent px-3 text-xs font-medium text-foreground transition-colors hover:bg-secondary',
+          )}
+        >
+          <Search size={14} /> Manage sessions
+        </Link>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        <KpiCard
+          label="Sessions logged"
+          value={formatNumber(data.totalSessions)}
+          icon={Search}
+          accent="primary"
+        />
+        <KpiCard
+          label="Applications linked"
+          value={formatNumber(data.linkedApplicationsCount)}
+          icon={Briefcase}
+          accent="info"
+          hint={
+            data.totalSessions === 0
+              ? 'link from application form'
+              : `~${appsPerSession} per session`
+          }
+        />
+      </div>
+
+      <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <TimeSeriesChart
+          data={data.searchesPerDay}
+          title="Search sessions per day"
+        />
+        <div className="grid grid-cols-1 gap-4">
+          <DistributionBars
+            title="By platform"
+            items={data.byPlatform.map((row) => ({
+              key: row.key,
+              label: sessionPlatformLabel({
+                platform: row.key,
+                platformOther: null,
+              }),
+              count: row.count,
+              percentage: row.percentage,
+            }))}
+          />
+          <DistributionBars
+            title="By completion"
+            items={data.byCompletion.map((row) => ({
+              key: row.key,
+              label: searchCompletionLabels[row.key],
+              count: row.count,
+              percentage: row.percentage,
+            }))}
+          />
+        </div>
+      </div>
+
+      <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Top queries</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {data.topQueries.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No sessions in range</p>
+            ) : (
+              <ul className="space-y-2">
+                {data.topQueries.map((q, i) => (
+                  <li
+                    key={`${q.queryTitle}-${i}`}
+                    className="flex items-center justify-between rounded-md bg-secondary/40 px-3 py-2 text-sm"
+                  >
+                    <span className="font-medium">{q.queryTitle}</span>
+                    <span className="text-muted-foreground">{q.count}×</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent sessions</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {data.recentSessions.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No sessions in range</p>
+            ) : (
+              <ul className="space-y-3">
+                {data.recentSessions.map((s) => (
+                  <li
+                    key={s.id}
+                    className="rounded-md border border-border/60 px-3 py-2 text-sm"
+                  >
+                    <p className="font-medium">{s.queryTitle}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {sessionPlatformLabel(s)} · {formatDateTime(s.searchedAt)} ·{' '}
+                      {searchCompletionLabels[s.isComplete ? 'complete' : 'incomplete']} ·{' '}
+                      {s.applicationsCount} apps
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Job posted from: {formatDate(s.jobPostedFrom)}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )}
           </CardContent>
         </Card>
       </div>

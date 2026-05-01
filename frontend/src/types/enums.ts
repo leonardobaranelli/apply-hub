@@ -156,3 +156,22 @@ export const ACTIVE_STATUSES: readonly ApplicationStatus[] = [
   ApplicationStatus.NEGOTIATING,
   ApplicationStatus.ON_HOLD,
 ];
+
+export const SearchPlatform = {
+  LINKEDIN: 'linkedin',
+  GOOGLE: 'google',
+  INDEED: 'indeed',
+  GLASSDOOR: 'glassdoor',
+  JOB_BOARD: 'job_board',
+  COMPANY_SITE: 'company_site',
+  RECRUITER_PORTAL: 'recruiter_portal',
+  OTHER: 'other',
+} as const;
+export type SearchPlatform = (typeof SearchPlatform)[keyof typeof SearchPlatform];
+
+export const SearchCompletionKey = {
+  COMPLETE: 'complete',
+  INCOMPLETE: 'incomplete',
+} as const;
+export type SearchCompletionKey =
+  (typeof SearchCompletionKey)[keyof typeof SearchCompletionKey];

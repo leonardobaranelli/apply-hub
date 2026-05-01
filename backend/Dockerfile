@@ -13,7 +13,7 @@ COPY . .
 EXPOSE 3001
 # Pushes the schema (creates tables/enums) and starts Nest in watch mode.
 # `db push` is safe for dev; switch to `prisma migrate deploy` for prod.
-CMD ["sh", "-c", "npx prisma db push --skip-generate && npm run start:dev"]
+CMD ["sh", "-c", "npx prisma generate && npx prisma db push && npm run start:dev"]
 
 FROM base AS build
 RUN npm install

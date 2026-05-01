@@ -55,7 +55,13 @@ function splitCreateAndUpdate(row) {
   return { create, update };
 }
 
-const MODELS = ['contact', 'jobApplication', 'applicationEvent', 'template'];
+const MODELS = [
+  'contact',
+  'jobSearchSession',
+  'jobApplication',
+  'applicationEvent',
+  'template',
+];
 
 async function syncModel(modelName, source, target) {
   let lastId = null;

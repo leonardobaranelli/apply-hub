@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { todayIso } from '@/lib/format';
+import { useSearchSessionsList } from '@/hooks/use-search-sessions';
+import { todayIso, formatDate } from '@/lib/format';
 import {
   ApplicationMethod,
   EmploymentType,
@@ -89,6 +90,7 @@ const schema = z.object({
   contactEmail: z.string().optional(),
   contactPhone: z.string().optional(),
   contactOther: z.string().optional(),
+  jobSearchSessionId: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -125,6 +127,19 @@ export function ApplicationForm({
   submitLabel = 'Save',
 }: Props) {
   const isEdit = Boolean(defaultValues?.id);
+
+  const { data: sessionsData } = useSearchSessionsList({ limit: 100 });
+
+  const sessionSelectOptions = useMemo(
+    () => [
+      { value: '', label: 'None' },
+      ...(sessionsData?.data ?? []).map((s) => ({
+        value: s.id,
+        label: `${formatDate(s.searchedAt)} · ${s.queryTitle}`,
+      })),
+    ],
+    [sessionsData],
+  );
 
   const {
     register,
@@ -166,6 +181,7 @@ export function ApplicationForm({
       contactEmail: defaultValues?.contactEmail ?? (isEdit ? '' : PLACEHOLDER),
       contactPhone: defaultValues?.contactPhone ?? (isEdit ? '' : PLACEHOLDER),
       contactOther: defaultValues?.contactOther ?? (isEdit ? '' : PLACEHOLDER),
+      jobSearchSessionId: defaultValues?.jobSearchSessionId ?? '',
     },
   });
 
@@ -245,6 +261,15 @@ export function ApplicationForm({
       contactPhone: stripPlaceholder(values.contactPhone),
       contactOther: stripPlaceholder(values.contactOther),
     };
+
+    if (isEdit) {
+      payload.jobSearchSessionId = values.jobSearchSessionId?.trim()
+        ? values.jobSearchSessionId.trim()
+        : null;
+    } else if (values.jobSearchSessionId?.trim()) {
+      payload.jobSearchSessionId = values.jobSearchSessionId.trim();
+    }
+
     await onSubmit(payload);
   };
 
@@ -291,6 +316,12 @@ export function ApplicationForm({
           </Field>
           <Field label="Platform / Source">
             <Input {...register('platform')} placeholder="LinkedIn" />
+          </Field>
+          <Field label="Job search session">
+            <Select
+              {...register('jobSearchSessionId')}
+              options={sessionSelectOptions}
+            />
           </Field>
           <Field label="Source detail">
             <Input {...register('source')} />
