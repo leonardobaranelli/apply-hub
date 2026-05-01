@@ -4,6 +4,7 @@ import {
   FileText,
   LayoutDashboard,
   Search,
+  Settings,
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
@@ -20,6 +21,7 @@ const navItems: ReadonlyArray<NavItem> = [
   { to: '/applications', label: 'Applications', icon: Briefcase },
   { to: '/search-sessions', label: 'Search sessions', icon: Search },
   { to: '/templates', label: 'Templates', icon: FileText },
+  { to: '/settings', label: 'Settings', icon: Settings },
 ];
 
 export function Sidebar() {

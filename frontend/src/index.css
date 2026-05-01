@@ -32,31 +32,85 @@
     --ring: 243 75% 59%;
   }
 
-  /* Near-black base + cool neutrals + cyan accent (high contrast on OLED-ish UI) */
+  /* Dark shell shared by all presets (near-black + cool neutrals) */
   .dark {
     --background: 220 10% 4%;
     --foreground: 210 20% 96%;
     --card: 220 12% 8%;
     --card-foreground: 210 20% 96%;
-    --primary: 188 86% 48%;
-    --primary-foreground: 204 80% 8%;
     --secondary: 220 10% 13%;
     --secondary-foreground: 210 20% 96%;
     --muted: 220 10% 12%;
     --muted-foreground: 215 14% 58%;
-    --accent: 188 42% 14%;
-    --accent-foreground: 186 72% 82%;
     --destructive: 0 72% 54%;
     --destructive-foreground: 0 0% 100%;
     --success: 152 58% 42%;
     --success-foreground: 0 0% 100%;
     --warning: 45 93% 52%;
     --warning-foreground: 220 10% 8%;
-    --info: 199 89% 55%;
-    --info-foreground: 220 10% 8%;
     --border: 220 10% 16%;
     --input: 220 10% 16%;
+  }
+
+  /* Ocean — original cyan accent */
+  .dark.theme-preset-ocean {
+    --primary: 188 86% 48%;
+    --primary-foreground: 204 80% 8%;
+    --accent: 188 42% 14%;
+    --accent-foreground: 186 72% 82%;
+    --info: 199 89% 55%;
+    --info-foreground: 220 10% 8%;
     --ring: 188 86% 48%;
+  }
+
+  .dark.theme-preset-violet {
+    --primary: 263 72% 58%;
+    --primary-foreground: 260 60% 98%;
+    --accent: 263 38% 18%;
+    --accent-foreground: 264 85% 88%;
+    --info: 258 75% 62%;
+    --info-foreground: 260 60% 98%;
+    --ring: 263 72% 58%;
+  }
+
+  .dark.theme-preset-emerald {
+    --primary: 158 64% 42%;
+    --primary-foreground: 156 80% 8%;
+    --accent: 158 40% 14%;
+    --accent-foreground: 156 62% 82%;
+    --info: 172 55% 48%;
+    --info-foreground: 156 80% 8%;
+    --ring: 158 64% 42%;
+  }
+
+  .dark.theme-preset-rose {
+    --primary: 350 72% 56%;
+    --primary-foreground: 350 60% 98%;
+    --accent: 350 42% 16%;
+    --accent-foreground: 350 85% 90%;
+    --info: 330 70% 58%;
+    --info-foreground: 350 60% 98%;
+    --ring: 350 72% 56%;
+  }
+
+  .dark.theme-preset-amber {
+    --primary: 38 92% 50%;
+    --primary-foreground: 28 80% 10%;
+    --accent: 35 45% 14%;
+    --accent-foreground: 45 90% 78%;
+    --info: 43 85% 52%;
+    --info-foreground: 28 80% 10%;
+    --ring: 38 92% 50%;
+  }
+
+  .dark.theme-preset-slate {
+    --primary: 215 22% 58%;
+    --primary-foreground: 220 20% 8%;
+    --accent: 215 18% 16%;
+    --accent-foreground: 210 25% 88%;
+    --info: 205 55% 52%;
+    --info-foreground: 220 20% 8%;
+    --ring: 215 22% 58%;
   }
 }
 

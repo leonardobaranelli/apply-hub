@@ -2,13 +2,9 @@ import { Link } from 'react-router-dom';
 import { ArrowUpRight, Calendar, MapPin } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/status/status-badge';
+import { usePlatformSettings } from '@/context/platform-settings-context';
 import { formatDate, formatRelative, formatSalaryRange } from '@/lib/format';
-import {
-  methodLabels,
-  positionLabels,
-  stageLabels,
-  workModeLabels,
-} from '@/types/labels';
+import { positionLabels, stageLabels } from '@/types/labels';
 import type { JobApplication } from '@/types/models';
 
 interface Props {
@@ -16,6 +12,8 @@ interface Props {
 }
 
 export function ApplicationRow({ application }: Props) {
+  const { effectiveMethodLabels, effectiveWorkModeLabels } =
+    usePlatformSettings();
   const salary = formatSalaryRange(
     application.salaryMin,
     application.salaryMax,
@@ -49,7 +47,7 @@ export function ApplicationRow({ application }: Props) {
             {positionLabels[application.position]}
           </Badge>
           <Badge variant="outline">
-            {methodLabels[application.applicationMethod]}
+            {effectiveMethodLabels[application.applicationMethod]}
           </Badge>
         </div>
 
@@ -62,7 +60,7 @@ export function ApplicationRow({ application }: Props) {
               <MapPin size={12} /> {application.location}
             </span>
           ) : null}
-          <span>{workModeLabels[application.workMode]}</span>
+          <span>{effectiveWorkModeLabels[application.workMode]}</span>
           {salary ? <span>· {salary}</span> : null}
         </div>
 

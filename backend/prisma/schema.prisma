@@ -301,3 +301,14 @@ model Template {
   @@index([type])
   @@map("templates")
 }
+
+/// Single-row platform preferences (UI theme, form labels, selector order).
+model PlatformSettings {
+  id         String   @id @db.VarChar(32)
+  themeId    String   @default("ocean") @map("theme_id") @db.VarChar(32)
+  formConfig Json     @map("form_config") @db.JsonB
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("platform_settings")
+}

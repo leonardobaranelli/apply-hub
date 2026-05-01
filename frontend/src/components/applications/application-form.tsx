@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { usePlatformSettings } from '@/context/platform-settings-context';
 import { useSearchSessionsList } from '@/hooks/use-search-sessions';
 import { todayIso, formatDate } from '@/lib/format';
 import {
@@ -19,10 +20,8 @@ import {
 } from '@/types/enums';
 import {
   employmentLabels,
-  methodLabels,
   positionLabels,
   priorityLabels,
-  workModeLabels,
 } from '@/types/labels';
 import type { JobApplication } from '@/types/models';
 import type {
@@ -149,6 +148,7 @@ export function ApplicationForm({
   submitLabel = 'Save',
 }: Props) {
   const isEdit = Boolean(defaultValues?.id);
+  const { methodSelectOptions, workModeSelectOptions } = usePlatformSettings();
 
   const { data: sessionsData } = useSearchSessionsList({ limit: 100 });
 
@@ -244,12 +244,20 @@ export function ApplicationForm({
     [],
   );
   const methodOptions = useMemo(
-    () => enumToOptions(ApplicationMethod, methodLabels),
-    [],
+    () =>
+      methodSelectOptions.map((o) => ({
+        value: o.value,
+        label: o.label,
+      })),
+    [methodSelectOptions],
   );
   const workModeOptions = useMemo(
-    () => enumToOptions(WorkMode, workModeLabels),
-    [],
+    () =>
+      workModeSelectOptions.map((o) => ({
+        value: o.value,
+        label: o.label,
+      })),
+    [workModeSelectOptions],
   );
   const priorityOptions = useMemo(
     () => enumToOptions(Priority, priorityLabels),
