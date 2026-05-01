@@ -41,6 +41,7 @@ import {
   formatSalaryRange,
 } from '@/lib/format';
 import {
+  postingLanguageLabels,
   priorityLabels,
   searchCompletionLabels,
   stageLabels,
@@ -235,6 +236,14 @@ export function ApplicationDetailPage() {
                 label="Vacancy posted"
                 value={formatDate(application.vacancyPostedDate)}
               />
+              {application.postingLanguage ? (
+                <Row
+                  label="Idioma de la propuesta"
+                  value={
+                    postingLanguageLabels[application.postingLanguage]
+                  }
+                />
+              ) : null}
               {application.employmentType ? (
                 <Row
                   label="Employment"
