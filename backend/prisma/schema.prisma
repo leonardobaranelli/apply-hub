@@ -150,6 +150,18 @@ enum EventChannel {
   other
 }
 
+/// Where you ran the search (LinkedIn, Google, etc.).
+enum SearchPlatform {
+  linkedin
+  google
+  indeed
+  glassdoor
+  job_board
+  company_site
+  recruiter_portal
+  other
+}
+
 // ─────────────────────────────────────────────────────────────────────
 //  Models
 // ─────────────────────────────────────────────────────────────────────
@@ -213,6 +225,9 @@ model JobApplication {
   createdAt         DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt         DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
 
+  jobSearchSessionId String?           @map("job_search_session_id") @db.Uuid
+  jobSearchSession   JobSearchSession? @relation(fields: [jobSearchSessionId], references: [id], onDelete: SetNull)
+
   events   ApplicationEvent[]
   contacts Contact[]          @relation("ApplicationContacts")
 
@@ -221,7 +236,31 @@ model JobApplication {
   @@index([applicationDate])
   @@index([archivedAt])
   @@index([companyName])
+  @@index([jobSearchSessionId])
   @@map("job_applications")
+}
+
+/// Logged job-search session (query, filters, date window, platform) for reproducibility and analytics.
+model JobSearchSession {
+  id                 String          @id @default(uuid()) @db.Uuid
+  platform           SearchPlatform  @default(other)
+  platformOther      String?         @map("platform_other") @db.VarChar(100)
+  queryTitle         String          @map("query_title") @db.VarChar(250)
+  filterDescription  String?         @map("filter_description") @db.Text
+  jobPostedFrom      DateTime        @default(now()) @map("job_posted_from") @db.Date
+  searchedAt         DateTime        @default(now()) @map("searched_at") @db.Timestamptz(6)
+  resultsApproxCount Int?            @map("results_approx_count")
+  isComplete         Boolean         @default(false) @map("is_complete")
+  searchUrl          String?         @map("search_url") @db.VarChar(1000)
+  notes              String?         @db.Text
+  createdAt          DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  applications JobApplication[]
+
+  @@index([searchedAt])
+  @@index([platform])
+  @@map("job_search_sessions")
 }
 
 model ApplicationEvent {

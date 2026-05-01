@@ -39,14 +39,16 @@ function sanitizePgUrl(raw) {
 }
 
 async function collect(db) {
-  const [contacts, apps, events, templates] = await Promise.all([
+  const [contacts, searchSessions, apps, events, templates] = await Promise.all([
     db.contact.count(),
+    db.jobSearchSession.count(),
     db.jobApplication.count(),
     db.applicationEvent.count(),
     db.template.count(),
   ]);
-  const [cMax, aMax, eMax, tMax] = await Promise.all([
+  const [cMax, ssMax, aMax, eMax, tMax] = await Promise.all([
     db.contact.aggregate({ _max: { updatedAt: true } }),
+    db.jobSearchSession.aggregate({ _max: { updatedAt: true } }),
     db.jobApplication.aggregate({ _max: { updatedAt: true } }),
     db.applicationEvent.aggregate({ _max: { updatedAt: true } }),
     db.template.aggregate({ _max: { updatedAt: true } }),
@@ -57,6 +59,7 @@ async function collect(db) {
   return {
     counts: {
       contacts,
+      jobSearchSessions: searchSessions,
       jobApplications: apps,
       applicationEvents: events,
       templates,
@@ -64,6 +67,7 @@ async function collect(db) {
     },
     maxUpdatedAt: {
       contacts: cMax._max.updatedAt?.toISOString() ?? null,
+      jobSearchSessions: ssMax._max.updatedAt?.toISOString() ?? null,
       jobApplications: aMax._max.updatedAt?.toISOString() ?? null,
       applicationEvents: eMax._max.updatedAt?.toISOString() ?? null,
       templates: tMax._max.updatedAt?.toISOString() ?? null,

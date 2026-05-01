@@ -31,6 +31,12 @@ export class ApplicationsService {
     const status = dto.status ?? ApplicationStatus.APPLIED;
     const stage = dto.stage ?? this.statusResolver.defaultStageFor(status);
 
+    let jobSearchSessionId: string | undefined;
+    if (dto.jobSearchSessionId) {
+      await this.assertSearchSessionExists(dto.jobSearchSessionId);
+      jobSearchSessionId = dto.jobSearchSessionId;
+    }
+
     return this.prisma.$transaction(async (tx) => {
       const created = await tx.jobApplication.create({
         data: {
@@ -63,6 +69,7 @@ export class ApplicationsService {
           contactEmail: dto.contactEmail ?? null,
           contactPhone: dto.contactPhone ?? null,
           contactOther: dto.contactOther ?? null,
+          jobSearchSessionId: jobSearchSessionId ?? undefined,
           lastActivityAt: new Date(),
         },
       });
@@ -197,7 +204,18 @@ export class ApplicationsService {
   async findOne(id: string): Promise<JobApplication> {
     const app = await this.prisma.jobApplication.findUnique({
       where: { id },
-      include: { contacts: true },
+      include: {
+        contacts: true,
+        jobSearchSession: {
+          select: {
+            id: true,
+            queryTitle: true,
+            platform: true,
+            platformOther: true,
+            searchedAt: true,
+          },
+        },
+      },
     });
     if (!app) {
       throw new NotFoundException(`Application ${id} not found`);
@@ -244,6 +262,16 @@ export class ApplicationsService {
     if (dto.contactEmail !== undefined) data.contactEmail = dto.contactEmail;
     if (dto.contactPhone !== undefined) data.contactPhone = dto.contactPhone;
     if (dto.contactOther !== undefined) data.contactOther = dto.contactOther;
+    if (dto.jobSearchSessionId !== undefined) {
+      if (dto.jobSearchSessionId === null) {
+        data.jobSearchSession = { disconnect: true };
+      } else {
+        await this.assertSearchSessionExists(dto.jobSearchSessionId);
+        data.jobSearchSession = {
+          connect: { id: dto.jobSearchSessionId },
+        };
+      }
+    }
 
     return this.prisma.jobApplication.update({
       where: { id },
@@ -432,6 +460,16 @@ export class ApplicationsService {
     });
     if (!exists) {
       throw new NotFoundException(`Application ${id} not found`);
+    }
+  }
+
+  private async assertSearchSessionExists(id: string): Promise<void> {
+    const row = await this.prisma.jobSearchSession.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+    if (!row) {
+      throw new NotFoundException(`Search session ${id} not found`);
     }
   }
 }

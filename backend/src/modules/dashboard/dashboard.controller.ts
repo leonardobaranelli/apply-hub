@@ -8,6 +8,11 @@ import { DashboardQueryDto } from './dto/dashboard-query.dto';
 export class DashboardController {
   constructor(private readonly service: DashboardService) {}
 
+  @Get('search-activity')
+  getSearchActivity(@Query() query: DashboardQueryDto) {
+    return this.service.getSearchActivity(query);
+  }
+
   @Get()
   getOverview(@Query() query: DashboardQueryDto) {
     return this.service.getOverview(query);

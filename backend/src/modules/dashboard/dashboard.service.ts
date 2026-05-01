@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { JobApplication, Prisma } from '@prisma/client';
+import { JobApplication, Prisma, SearchPlatform } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
   ACTIVE_STATUSES,
@@ -18,6 +18,8 @@ import {
   FunnelStep,
   KpiSummary,
   MethodEffectiveness,
+  SearchActivityOverview,
+  SearchCompletionKey,
   TimeSeriesPoint,
   TopCompany,
 } from './dashboard.types';
@@ -75,6 +77,64 @@ export class DashboardService {
       methodEffectiveness,
       topCompanies,
       upcomingFollowUps,
+    };
+  }
+
+  async getSearchActivity(query: DashboardQueryDto): Promise<SearchActivityOverview> {
+    const where: Prisma.JobSearchSessionWhereInput = {};
+    if (query.fromDate || query.toDate) {
+      where.searchedAt = {
+        ...(query.fromDate
+          ? { gte: new Date(`${query.fromDate}T00:00:00.000Z`) }
+          : {}),
+        ...(query.toDate
+          ? { lte: new Date(`${query.toDate}T23:59:59.999Z`) }
+          : {}),
+      };
+    }
+
+    const sessions = await this.prisma.jobSearchSession.findMany({
+      where,
+      orderBy: { searchedAt: 'desc' },
+      include: { _count: { select: { applications: true } } },
+    });
+
+    const totalSessions = sessions.length;
+    const linkedApplicationsCount = sessions.reduce(
+      (sum, row) => sum + row._count.applications,
+      0,
+    );
+    const byPlatform = this.sessionFieldDistribution(
+      sessions,
+      (s) => s.platform as SearchPlatform,
+    );
+    const byCompletion = this.sessionFieldDistribution(
+      sessions,
+      (s): SearchCompletionKey => (s.isComplete ? 'complete' : 'incomplete'),
+    );
+    const searchesPerDay = this.computeSearchSessionsTimeSeries(sessions);
+    const topQueries = this.computeTopSearchQueries(sessions);
+    const recentSessions = sessions.slice(0, 20).map((s) => ({
+      id: s.id,
+      platform: s.platform,
+      platformOther: s.platformOther,
+      queryTitle: s.queryTitle,
+      searchedAt: s.searchedAt.toISOString(),
+      isComplete: s.isComplete,
+      applicationsCount: s._count.applications,
+      filterDescription: s.filterDescription,
+      jobPostedFrom: s.jobPostedFrom.toISOString(),
+      resultsApproxCount: s.resultsApproxCount,
+    }));
+
+    return {
+      totalSessions,
+      linkedApplicationsCount,
+      byPlatform,
+      byCompletion,
+      searchesPerDay,
+      topQueries,
+      recentSessions,
     };
   }
 
@@ -326,5 +386,54 @@ export class DashboardService {
       const ref = a.lastActivityAt?.getTime() ?? a.applicationDate.getTime();
       return now - ref >= sevenDays;
     }).length;
+  }
+
+  private sessionFieldDistribution<K extends string, S>(
+    sessions: S[],
+    keyOf: (s: S) => K,
+  ): DistributionItem<K>[] {
+    const counts = new Map<K, number>();
+    for (const s of sessions) {
+      const k = keyOf(s);
+      counts.set(k, (counts.get(k) ?? 0) + 1);
+    }
+    const total = sessions.length;
+    return Array.from(counts.entries())
+      .map(([key, count]) => ({
+        key,
+        count,
+        percentage: total === 0 ? 0 : Math.round((count / total) * 1000) / 10,
+      }))
+      .sort((a, b) => b.count - a.count);
+  }
+
+  private computeSearchSessionsTimeSeries(
+    sessions: Array<{ searchedAt: Date }>,
+  ): TimeSeriesPoint[] {
+    const counts = new Map<string, number>();
+    for (const s of sessions) {
+      const date = s.searchedAt.toISOString().slice(0, 10);
+      counts.set(date, (counts.get(date) ?? 0) + 1);
+    }
+    return Array.from(counts.entries())
+      .sort(([a], [b]) => (a < b ? -1 : 1))
+      .map(([date, count]) => ({ date, count }));
+  }
+
+  private computeTopSearchQueries(
+    sessions: Array<{ queryTitle: string }>,
+  ): Array<{ queryTitle: string; count: number }> {
+    const map = new Map<string, { display: string; count: number }>();
+    for (const s of sessions) {
+      const display = s.queryTitle.trim();
+      const key = display.toLowerCase();
+      const cur = map.get(key);
+      if (cur) cur.count += 1;
+      else map.set(key, { display, count: 1 });
+    }
+    return Array.from(map.values())
+      .map((v) => ({ queryTitle: v.display, count: v.count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 15);
   }
 }
