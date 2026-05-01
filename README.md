@@ -29,6 +29,23 @@ apply-hub/
 - **Reusable contacts**: link contacts to multiple applications.
 - **Templates**: cover letters, LinkedIn messages and follow-ups with one-click copy.
 - **Analytical dashboard**: KPIs (response rate, interview rate, offer rate), conversion funnel, distributions, activity heatmap, top companies/platforms.
+- **Job search sessions**: log each search (platform, query, date); sessions can be **active** or **complete**; the dashboard surfaces search activity. New job applications **default to the latest active session** so each application stays tied to the search context (you can change or clear the link in the form).
+
+## Job search sessions
+
+ApplyHub stores **job search sessions** (`JobSearchSession`): platform (LinkedIn, company site, other), optional platform label, query or title, when you searched, and whether the session is marked **complete** or still **active**.
+
+- Create and review sessions from the app (including **Search activity** on the dashboard).
+- Each **job application** may reference a session via `jobSearchSessionId`. On **New application**, the form preselects the **most recent active** session (sorted by `searchedAt`), or **None** if there is no active session.
+
+## Application form & data model
+
+- **Vacancy posted date** — when the listing was published; stored on `JobApplication` (`vacancy_posted_date`). On create it defaults to **today**, same idea as **Application date** (and falls back to the application date when editing older records without a stored value).
+- **Salary period** — free text; **new** applications default to **Indefinite** (English), sent to the API as a normal value (not treated as an “unspecified” placeholder).
+- **Excitement** (1–5) has been **removed** from the schema and UI.
+- **Role title** (preset list): display order is Junior → Junior Advanced → Junior Advanced/SSR → SSR → Senior; the default selection remains **Junior Advanced/SSR**.
+
+After pulling schema changes, run `npx prisma db push` (or create a migration). The Docker backend startup path already runs `prisma generate` and `db push` so local containers stay in sync.
 
 ## Quick start
 

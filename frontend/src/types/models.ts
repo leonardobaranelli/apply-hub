@@ -71,6 +71,7 @@ export interface JobApplication {
   workMode: WorkMode;
   employmentType: EmploymentType | null;
   applicationDate: string;
+  vacancyPostedDate: string;
   applicationMethod: ApplicationMethod;
   source: string | null;
   platform: string | null;
@@ -81,7 +82,6 @@ export interface JobApplication {
   status: ApplicationStatus;
   stage: ApplicationStage;
   priority: Priority;
-  excitement: number | null;
   tags: string[];
   notes: string | null;
   resumeVersion: string | null;

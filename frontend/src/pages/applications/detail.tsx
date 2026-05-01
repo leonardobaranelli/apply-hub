@@ -7,7 +7,6 @@ import {
   Calendar,
   Edit3,
   ExternalLink,
-  Heart,
   Linkedin,
   Mail,
   MapPin,
@@ -135,7 +134,10 @@ export function ApplicationDetailPage() {
             <Building2 size={14} /> {application.companyName}
           </span>
           <span className="inline-flex items-center gap-1">
-            <Calendar size={14} /> {formatDate(application.applicationDate)}
+            <Calendar size={14} /> Posted {formatDate(application.vacancyPostedDate)}
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <Calendar size={14} /> Applied {formatDate(application.applicationDate)}
           </span>
           {application.location ? (
             <span className="inline-flex items-center gap-1">
@@ -216,26 +218,10 @@ export function ApplicationDetailPage() {
                 label="Priority"
                 value={priorityLabels[application.priority]}
               />
-              {application.excitement !== null ? (
-                <Row
-                  label="Excitement"
-                  value={
-                    <span className="inline-flex items-center gap-0.5">
-                      {Array.from({ length: 5 }, (_, i) => (
-                        <Heart
-                          key={i}
-                          size={12}
-                          className={
-                            i < (application.excitement ?? 0)
-                              ? 'fill-destructive text-destructive'
-                              : 'text-muted-foreground/40'
-                          }
-                        />
-                      ))}
-                    </span>
-                  }
-                />
-              ) : null}
+              <Row
+                label="Vacancy posted"
+                value={formatDate(application.vacancyPostedDate)}
+              />
               {application.employmentType ? (
                 <Row
                   label="Employment"

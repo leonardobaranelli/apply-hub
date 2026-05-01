@@ -22,6 +22,7 @@ export interface CreateApplicationInput {
   workMode?: WorkMode;
   employmentType?: EmploymentType | null;
   applicationDate?: string;
+  vacancyPostedDate?: string;
   applicationMethod?: ApplicationMethod;
   source?: string | null;
   platform?: string | null;
@@ -30,7 +31,6 @@ export interface CreateApplicationInput {
   currency?: string | null;
   salaryPeriod?: string | null;
   priority?: Priority;
-  excitement?: number | null;
   tags?: string[];
   notes?: string | null;
   resumeVersion?: string | null;
