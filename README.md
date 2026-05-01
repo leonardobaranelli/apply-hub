@@ -77,16 +77,16 @@ Inside `backend/`:
 ## Replica / live backup database
 
 ApplyHub can mirror every successful write on the primary database to a
-secondary one (e.g. a Render-hosted Postgres) so you always have a hot
+secondary one (e.g. a managed Postgres replica) so you always have a hot
 standby. Reads always go to the primary; the replica is updated
 asynchronously after each `create` / `update` / `delete`.
 
 ### Current status 
 
 - **Primary DB**: local Postgres (`DATABASE_URL`).
-- **Secondary DB**: Render Postgres (`DATABASE_URL_REPLICA`).
-- **Normal work**: app writes to local and mirrors to Render automatically.
-- **Validation**: tested end-to-end (auto mirror + local->render + render->local).
+- **Secondary DB**: replica Postgres (`DATABASE_URL_REPLICA`).
+- **Normal work**: app writes to local and mirrors to the replica automatically.
+- **Validation**: tested end-to-end (auto mirror + local->replica + replica->local).
 - **Fast checks**: run `npm run db:status` inside `backend` to confirm parity.
 
 ### Command cheat sheet (all key commands)
@@ -97,43 +97,41 @@ Run from `backend/` unless stated otherwise:
 # 1) Bring services up (from repo root)
 docker compose up -d postgres backend
 
-# 2) Check local vs Render parity
+# 2) Check local vs replica parity
 docker compose exec backend npm run db:status
 
 # 3) Normal/fast sync (incremental, recommended day-to-day)
-docker compose exec backend npm run db:sync:incremental:local-to-render
-docker compose exec backend npm run db:sync:incremental:render-to-local
+docker compose exec backend npm run db:sync:incremental:local-to-replica
+docker compose exec backend npm run db:sync:incremental:replica-to-local
 
 # 4) Full snapshot sync (recovery / heavy drift)
-npm --prefix backend run db:sync:local-to-render
-npm --prefix backend run db:sync:render-to-local
+npm --prefix backend run db:sync:local-to-replica
+npm --prefix backend run db:sync:replica-to-local
 
-# 5) Render schema + seed (one-time or when needed)
-docker compose exec backend npm run prisma:db:push:render
-docker compose exec backend npm run seed:render
+# 5) Replica schema + seed (one-time or when needed)
+docker compose exec backend npm run prisma:db:push:replica
+docker compose exec backend npm run seed:replica
 
-# 6) Open Prisma Studio on Render
-docker compose exec backend npm run prisma:studio:render
+# 6) Open Prisma Studio on replica
+docker compose exec backend npm run prisma:studio:replica
 ```
 
 ### How to enable it
 
-1. Get the **External Database URL** from your Render dashboard:
-   `Database → Connect → External Database URL`. It must end with
-   `.<region>-postgres.render.com/<db>` (the *internal* URL won't work from
-   your machine).
+1. Get the **External Database URL** from your provider dashboard
+   (avoid internal/private URLs that only work inside hosted networks).
 2. Set `DATABASE_URL_REPLICA` in `.env`, appending `?sslmode=require`:
    ```env
-   DATABASE_URL_REPLICA=postgresql://user:pass@dpg-XXX-a.virginia-postgres.render.com/db?sslmode=require
+   DATABASE_URL_REPLICA=postgresql://user:pass@your-replica-host:5432/db?sslmode=require
    ```
 3. Push the schema to the replica (one-time):
    ```bash
    cd backend
-   npm run prisma:db:push:render
+   npm run prisma:db:push:replica
    ```
 4. (Optional) Copy existing data over once:
    ```bash
-   npm run db:sync:local-to-render
+   npm run db:sync:local-to-replica
    ```
 5. Restart the backend (`docker compose up -d --build backend`).
    On startup you should see `Prisma connected (replica)` in the logs.
@@ -147,8 +145,8 @@ can do a full data refresh in either direction:
 
 ```bash
 cd backend
-npm run db:sync:local-to-render    # push local snapshot to Render
-npm run db:sync:render-to-local    # restore from Render to local
+npm run db:sync:local-to-replica    # push local snapshot to replica
+npm run db:sync:replica-to-local    # restore from replica to local
 ```
 
 These scripts run `pg_dump | psql` inside a one-off `postgres:18-alpine`
@@ -164,8 +162,8 @@ For regular syncs, you can run an incremental mode that:
 
 ```bash
 cd backend
-npm run db:sync:incremental:local-to-render
-npm run db:sync:incremental:render-to-local
+npm run db:sync:incremental:local-to-replica
+npm run db:sync:incremental:replica-to-local
 ```
 
 Use this for frequent syncs. Keep full snapshot sync for disaster recovery
@@ -173,14 +171,14 @@ or when you suspect heavy drift.
 
 ### Other replica-targeted scripts
 
-- `npm run prisma:studio:render` — Prisma Studio against the Render database.
-- `npm run seed:render` — seed default templates into the Render database.
+- `npm run prisma:studio:replica` — Prisma Studio against the replica database.
+- `npm run seed:replica` — seed default templates into the replica database.
 
 ### Caveats
 
 - Replication is **eventually consistent** (fire-and-forget after the local
   write succeeds). If the replica is briefly unreachable, those writes will
-  be missing until you run `db:sync:local-to-render`.
+  be missing until you run `db:sync:local-to-replica`.
 - The primary is always the source of truth. To switch the app to the
   replica during a local outage, swap `DATABASE_URL` to the replica URL and
   restart the backend.

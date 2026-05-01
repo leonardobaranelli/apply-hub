@@ -55,12 +55,7 @@ function splitCreateAndUpdate(row) {
   return { create, update };
 }
 
-const MODELS = [
-  'contact',
-  'jobApplication',
-  'applicationEvent',
-  'template',
-];
+const MODELS = ['contact', 'jobApplication', 'applicationEvent', 'template'];
 
 async function syncModel(modelName, source, target) {
   let lastId = null;
@@ -139,29 +134,29 @@ async function syncApplicationContactsPivot(source, target) {
 async function run() {
   const fileEnv = parseEnvFile(ENV_FILE);
   const localUrl = process.env.DATABASE_URL || fileEnv.DATABASE_URL;
-  const renderUrl =
+  const replicaUrl =
     process.env.DATABASE_URL_REPLICA || fileEnv.DATABASE_URL_REPLICA;
 
   if (!localUrl) throw new Error('DATABASE_URL is not set');
-  if (!renderUrl) throw new Error('DATABASE_URL_REPLICA is not set');
+  if (!replicaUrl) throw new Error('DATABASE_URL_REPLICA is not set');
 
   const direction = process.argv[2];
   const sourceUrl =
-    direction === 'local-to-render'
+    direction === 'local-to-replica'
       ? localUrl
-      : direction === 'render-to-local'
-        ? renderUrl
+      : direction === 'replica-to-local'
+        ? replicaUrl
         : null;
   const targetUrl =
-    direction === 'local-to-render'
-      ? renderUrl
-      : direction === 'render-to-local'
+    direction === 'local-to-replica'
+      ? replicaUrl
+      : direction === 'replica-to-local'
         ? localUrl
         : null;
 
   if (!sourceUrl || !targetUrl) {
     throw new Error(
-      'Usage: node scripts/db-sync-incremental.mjs <local-to-render|render-to-local>',
+      'Usage: node scripts/db-sync-incremental.mjs <local-to-replica|replica-to-local>',
     );
   }
 
