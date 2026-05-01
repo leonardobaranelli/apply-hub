@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm } from 'react-hook-form';
+import { useForm, type FieldErrors } from 'react-hook-form';
 import { z } from 'zod';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -106,6 +107,15 @@ const schema = z.object({
 });
 
 type FormValues = z.infer<typeof schema>;
+
+function firstFormErrorMessage(errors: FieldErrors<FormValues>): string {
+  for (const v of Object.values(errors)) {
+    if (v && typeof v === 'object' && 'message' in v && v.message) {
+      return String(v.message);
+    }
+  }
+  return 'Please fix the errors in the form.';
+}
 
 interface Props {
   defaultValues?: Partial<JobApplication>;
@@ -316,8 +326,14 @@ export function ApplicationForm({
     await onSubmit(payload);
   };
 
+  const onInvalid = (errors: FieldErrors<FormValues>): void => {
+    toast.error('Form incomplete', {
+      description: firstFormErrorMessage(errors),
+    });
+  };
+
   return (
-    <form onSubmit={handleSubmit(submit)} className="space-y-6">
+    <form onSubmit={handleSubmit(submit, onInvalid)} className="space-y-6">
       {/* ── Application core ─────────────────────────────────────── */}
       <Section title="Application">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
