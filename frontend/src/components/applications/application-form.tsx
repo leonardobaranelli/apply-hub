@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -130,20 +130,34 @@ export function ApplicationForm({
 
   const { data: sessionsData } = useSearchSessionsList({ limit: 100 });
 
+  const latestActiveSessionId = useMemo(() => {
+    const list = sessionsData?.data ?? [];
+    const actives = list
+      .filter((s) => !s.isComplete)
+      .sort(
+        (a, b) =>
+          Date.parse(b.searchedAt) - Date.parse(a.searchedAt),
+      );
+    return actives[0]?.id ?? '';
+  }, [sessionsData]);
+
   const sessionSelectOptions = useMemo(
     () => [
       { value: '', label: 'None' },
       ...(sessionsData?.data ?? []).map((s) => ({
         value: s.id,
-        label: `${formatDate(s.searchedAt)} · ${s.queryTitle}`,
+        label: `${formatDate(s.searchedAt)} · ${s.queryTitle}${!s.isComplete ? ' · Active' : ''}`,
       })),
     ],
     [sessionsData],
   );
 
+  const appliedActiveSessionDefaultRef = useRef(false);
+
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -184,6 +198,20 @@ export function ApplicationForm({
       jobSearchSessionId: defaultValues?.jobSearchSessionId ?? '',
     },
   });
+
+  useEffect(() => {
+    if (isEdit) return;
+    if (defaultValues?.jobSearchSessionId) return;
+    if (appliedActiveSessionDefaultRef.current) return;
+    if (!latestActiveSessionId) return;
+    setValue('jobSearchSessionId', latestActiveSessionId);
+    appliedActiveSessionDefaultRef.current = true;
+  }, [
+    isEdit,
+    defaultValues?.jobSearchSessionId,
+    latestActiveSessionId,
+    setValue,
+  ]);
 
   const positionOptions = useMemo(
     () => enumToOptions(PositionType, positionLabels),
@@ -317,7 +345,7 @@ export function ApplicationForm({
           <Field label="Platform / Source">
             <Input {...register('platform')} placeholder="LinkedIn" />
           </Field>
-          <Field label="Job search session">
+          <Field label="Job search session (latest active by default)">
             <Select
               {...register('jobSearchSessionId')}
               options={sessionSelectOptions}

@@ -458,7 +458,7 @@ function SearchActivityPanel({
             }))}
           />
           <DistributionBars
-            title="By completion"
+            title="Active vs complete"
             items={data.byCompletion.map((row) => ({
               key: row.key,
               label: searchCompletionLabels[row.key],
@@ -510,7 +510,7 @@ function SearchActivityPanel({
                     <p className="font-medium">{s.queryTitle}</p>
                     <p className="mt-1 text-xs text-muted-foreground">
                       {sessionPlatformLabel(s)} · {formatDateTime(s.searchedAt)} ·{' '}
-                      {searchCompletionLabels[s.isComplete ? 'complete' : 'incomplete']} ·{' '}
+                      {searchCompletionLabels[s.isComplete ? 'complete' : 'active']} ·{' '}
                       {s.applicationsCount} apps
                     </p>
                     <p className="mt-1 text-xs text-muted-foreground">

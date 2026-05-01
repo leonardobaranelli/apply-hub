@@ -101,6 +101,7 @@ export interface JobApplication {
     platform: SearchPlatform;
     platformOther: string | null;
     searchedAt: string;
+    isComplete: boolean;
   } | null;
   contacts?: Contact[];
   createdAt: string;
