@@ -30,7 +30,7 @@ apply-hub/
 - **Templates**: cover letters, LinkedIn messages and follow-ups with one-click copy.
 - **Applications dashboard**: KPIs (response rate, interview rate, offer rate), conversion funnel, distributions, activity heatmap, top companies/platforms.
 - **Search activity dashboard**: companion view for **job search sessions**—log where and what you searched, when, and whether each session is still **active** or marked **complete**; see how search activity sits alongside your pipeline. Sessions link to applications when you want that context; **New application** defaults to the latest active session (you can pick another or none).
-- **Settings**: UI color themes (Ocean by default, plus Violet, Emerald, Rose, Amber, and Slate) and stored preferences for **application method** and **work mode** selectors—custom labels, order, and what appears in dropdowns—applied across forms, filters, and dashboards.
+- **Settings**: **appearance** (dark, dim, light) × **six color presets** (Ocean default, Violet, Emerald, Rose, Amber, Slate), persisted in the browser and on the server. Configurable **form and filter options** with custom slugs where allowed: **application method**, **position type**, **employment type**, **search session platform**, **role title** list, **resume used** list, plus **work mode** label overrides—reorder, rename labels, hide entries, or add custom ids (validated against the API).
 
 ## Quick start
 

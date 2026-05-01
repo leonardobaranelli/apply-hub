@@ -41,18 +41,20 @@ import {
   formatSalaryRange,
 } from '@/lib/format';
 import {
-  employmentLabels,
-  positionLabels,
   priorityLabels,
   searchCompletionLabels,
-  searchPlatformLabels,
   stageLabels,
 } from '@/types/labels';
 import type { JobApplication } from '@/types/models';
 
 export function ApplicationDetailPage() {
-  const { effectiveMethodLabels, effectiveWorkModeLabels } =
-    usePlatformSettings();
+  const {
+    effectiveMethodLabels,
+    effectiveWorkModeLabels,
+    effectivePositionLabels,
+    effectiveEmploymentLabels,
+    effectiveSearchPlatformLabels,
+  } = usePlatformSettings();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { data: application, isLoading } = useApplication(id);
@@ -146,7 +148,11 @@ export function ApplicationDetailPage() {
             </span>
           ) : null}
           <span>{effectiveWorkModeLabels[application.workMode]}</span>
-          <span>· {effectiveMethodLabels[application.applicationMethod]}</span>
+          <span>
+            ·{' '}
+            {effectiveMethodLabels[application.applicationMethod] ??
+              application.applicationMethod}
+          </span>
           {application.jobUrl ? (
             <a
               href={application.jobUrl}
@@ -214,7 +220,13 @@ export function ApplicationDetailPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
-              <Row label="Position" value={positionLabels[application.position]} />
+              <Row
+                label="Position"
+                value={
+                  effectivePositionLabels[application.position] ??
+                  application.position
+                }
+              />
               <Row
                 label="Priority"
                 value={priorityLabels[application.priority]}
@@ -226,7 +238,10 @@ export function ApplicationDetailPage() {
               {application.employmentType ? (
                 <Row
                   label="Employment"
-                  value={employmentLabels[application.employmentType]}
+                  value={
+                    effectiveEmploymentLabels[application.employmentType] ??
+                    application.employmentType
+                  }
                 />
               ) : null}
               {salary ? <Row label="Salary" value={salary} /> : null}
@@ -242,7 +257,9 @@ export function ApplicationDetailPage() {
                   value={
                     <span className="text-right">
                       <span className="font-medium text-foreground">
-                        {searchPlatformLabels[application.jobSearchSession.platform]}
+                        {effectiveSearchPlatformLabels[
+                          application.jobSearchSession.platform
+                        ] ?? application.jobSearchSession.platform}
                         {application.jobSearchSession.platform === 'other' &&
                         application.jobSearchSession.platformOther
                           ? ` (${application.jobSearchSession.platformOther})`

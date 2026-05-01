@@ -6,6 +6,7 @@ import type {
 
 export interface UpdatePlatformSettingsInput {
   themeId?: string;
+  appearanceMode?: string;
   formConfig?: PlatformFormConfig;
 }
 

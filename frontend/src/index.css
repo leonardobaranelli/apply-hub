@@ -32,7 +32,7 @@
     --ring: 243 75% 59%;
   }
 
-  /* Dark shell shared by all presets (near-black + cool neutrals) */
+  /* Dark shell — near-black */
   .dark {
     --background: 220 10% 4%;
     --foreground: 210 20% 96%;
@@ -52,8 +52,49 @@
     --input: 220 10% 16%;
   }
 
-  /* Ocean — original cyan accent */
-  .dark.theme-preset-ocean {
+  /* Dim — between dark and light (softer UI) */
+  .dim {
+    --background: 220 12% 12%;
+    --foreground: 210 18% 94%;
+    --card: 220 11% 16%;
+    --card-foreground: 210 18% 94%;
+    --secondary: 220 10% 20%;
+    --secondary-foreground: 210 18% 94%;
+    --muted: 220 10% 18%;
+    --muted-foreground: 215 12% 62%;
+    --destructive: 0 65% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 152 52% 40%;
+    --success-foreground: 0 0% 100%;
+    --warning: 42 88% 50%;
+    --warning-foreground: 220 12% 10%;
+    --border: 220 10% 24%;
+    --input: 220 10% 24%;
+  }
+
+  /* Light shell — paper */
+  .light {
+    --background: 0 0% 98%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 40%;
+    --destructive: 0 72% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 142 65% 38%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 88% 48%;
+    --warning-foreground: 28 60% 12%;
+    --border: 220 13% 88%;
+    --input: 220 13% 88%;
+  }
+
+  /* Dark + Dim share the same accent curves (6 presets) */
+  .dark.theme-preset-ocean,
+  .dim.theme-preset-ocean {
     --primary: 188 86% 48%;
     --primary-foreground: 204 80% 8%;
     --accent: 188 42% 14%;
@@ -63,7 +104,8 @@
     --ring: 188 86% 48%;
   }
 
-  .dark.theme-preset-violet {
+  .dark.theme-preset-violet,
+  .dim.theme-preset-violet {
     --primary: 263 72% 58%;
     --primary-foreground: 260 60% 98%;
     --accent: 263 38% 18%;
@@ -73,7 +115,8 @@
     --ring: 263 72% 58%;
   }
 
-  .dark.theme-preset-emerald {
+  .dark.theme-preset-emerald,
+  .dim.theme-preset-emerald {
     --primary: 158 64% 42%;
     --primary-foreground: 156 80% 8%;
     --accent: 158 40% 14%;
@@ -83,7 +126,8 @@
     --ring: 158 64% 42%;
   }
 
-  .dark.theme-preset-rose {
+  .dark.theme-preset-rose,
+  .dim.theme-preset-rose {
     --primary: 350 72% 56%;
     --primary-foreground: 350 60% 98%;
     --accent: 350 42% 16%;
@@ -93,7 +137,8 @@
     --ring: 350 72% 56%;
   }
 
-  .dark.theme-preset-amber {
+  .dark.theme-preset-amber,
+  .dim.theme-preset-amber {
     --primary: 38 92% 50%;
     --primary-foreground: 28 80% 10%;
     --accent: 35 45% 14%;
@@ -103,7 +148,8 @@
     --ring: 38 92% 50%;
   }
 
-  .dark.theme-preset-slate {
+  .dark.theme-preset-slate,
+  .dim.theme-preset-slate {
     --primary: 215 22% 58%;
     --primary-foreground: 220 20% 8%;
     --accent: 215 18% 16%;
@@ -111,6 +157,67 @@
     --info: 205 55% 52%;
     --info-foreground: 220 20% 8%;
     --ring: 215 22% 58%;
+  }
+
+  /* Light mode accents (higher contrast on bright surfaces) */
+  .light.theme-preset-ocean {
+    --primary: 188 72% 36%;
+    --primary-foreground: 0 0% 100%;
+    --accent: 188 45% 92%;
+    --accent-foreground: 188 70% 22%;
+    --info: 199 80% 42%;
+    --info-foreground: 0 0% 100%;
+    --ring: 188 72% 36%;
+  }
+
+  .light.theme-preset-violet {
+    --primary: 263 62% 48%;
+    --primary-foreground: 0 0% 100%;
+    --accent: 263 40% 94%;
+    --accent-foreground: 263 55% 28%;
+    --info: 258 65% 48%;
+    --info-foreground: 0 0% 100%;
+    --ring: 263 62% 48%;
+  }
+
+  .light.theme-preset-emerald {
+    --primary: 158 58% 32%;
+    --primary-foreground: 0 0% 100%;
+    --accent: 158 40% 92%;
+    --accent-foreground: 158 55% 22%;
+    --info: 172 50% 36%;
+    --info-foreground: 0 0% 100%;
+    --ring: 158 58% 32%;
+  }
+
+  .light.theme-preset-rose {
+    --primary: 350 65% 44%;
+    --primary-foreground: 0 0% 100%;
+    --accent: 350 45% 94%;
+    --accent-foreground: 350 55% 28%;
+    --info: 330 60% 44%;
+    --info-foreground: 0 0% 100%;
+    --ring: 350 65% 44%;
+  }
+
+  .light.theme-preset-amber {
+    --primary: 32 88% 44%;
+    --primary-foreground: 0 0% 100%;
+    --accent: 40 90% 90%;
+    --accent-foreground: 28 70% 22%;
+    --info: 38 85% 42%;
+    --info-foreground: 0 0% 100%;
+    --ring: 32 88% 44%;
+  }
+
+  .light.theme-preset-slate {
+    --primary: 215 25% 42%;
+    --primary-foreground: 0 0% 100%;
+    --accent: 215 20% 92%;
+    --accent-foreground: 215 30% 26%;
+    --info: 205 55% 40%;
+    --info-foreground: 0 0% 100%;
+    --ring: 215 25% 42%;
   }
 }
 

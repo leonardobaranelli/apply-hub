@@ -3,7 +3,6 @@ import { Transform } from 'class-transformer';
 import {
   IsBoolean,
   IsDateString,
-  IsEnum,
   IsInt,
   IsOptional,
   IsString,
@@ -13,12 +12,15 @@ import {
   Min,
   MinLength,
 } from 'class-validator';
-import { SearchPlatform } from '../domain/search-session.enums';
 
 export class CreateSearchSessionDto {
-  @ApiProperty({ enum: SearchPlatform })
-  @IsEnum(SearchPlatform)
-  platform!: SearchPlatform;
+  @ApiProperty({
+    description: 'Built-in or custom search platform id from platform settings',
+    example: 'linkedin',
+  })
+  @IsString()
+  @MaxLength(48)
+  platform!: string;
 
   @ApiPropertyOptional({ description: 'Custom label when platform is other' })
   @IsOptional()
