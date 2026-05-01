@@ -160,5 +160,5 @@ export const searchPlatformLabels: Record<SearchPlatform, string> = {
 
 export const searchCompletionLabels: Record<SearchCompletionKey, string> = {
   complete: 'Complete',
-  incomplete: 'Incomplete',
+  active: 'Active',
 };

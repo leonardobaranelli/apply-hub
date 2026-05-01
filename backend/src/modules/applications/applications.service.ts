@@ -213,6 +213,7 @@ export class ApplicationsService {
             platform: true,
             platformOther: true,
             searchedAt: true,
+            isComplete: true,
           },
         },
       },

@@ -171,7 +171,7 @@ export type SearchPlatform = (typeof SearchPlatform)[keyof typeof SearchPlatform
 
 export const SearchCompletionKey = {
   COMPLETE: 'complete',
-  INCOMPLETE: 'incomplete',
+  ACTIVE: 'active',
 } as const;
 export type SearchCompletionKey =
   (typeof SearchCompletionKey)[keyof typeof SearchCompletionKey];

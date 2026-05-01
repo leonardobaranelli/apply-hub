@@ -6,7 +6,7 @@ import {
   WorkMode,
 } from '../applications/domain/application.enums';
 
-export type SearchCompletionKey = 'complete' | 'incomplete';
+export type SearchCompletionKey = 'complete' | 'active';
 
 export interface KpiSummary {
   total: number;

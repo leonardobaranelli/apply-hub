@@ -45,6 +45,7 @@ import {
   methodLabels,
   positionLabels,
   priorityLabels,
+  searchCompletionLabels,
   searchPlatformLabels,
   stageLabels,
   workModeLabels,
@@ -262,7 +263,8 @@ export function ApplicationDetailPage() {
                         : {application.jobSearchSession.queryTitle}
                       </span>
                       <span className="mt-0.5 block text-xs text-muted-foreground">
-                        {formatDateTime(application.jobSearchSession.searchedAt)}
+                        {searchCompletionLabels[application.jobSearchSession.isComplete ? 'complete' : 'active']}{' '}
+                        · {formatDateTime(application.jobSearchSession.searchedAt)}
                       </span>
                       <Link
                         to="/search-sessions"
