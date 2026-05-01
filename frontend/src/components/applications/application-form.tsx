@@ -33,12 +33,24 @@ import type {
 //  Domain options (form-only, no backend enum needed)
 // ─────────────────────────────────────────────────────────────────────
 const ROLE_OPTIONS = [
-  'Junior Advanced/SSR',
   'Junior',
   'Junior Advanced',
+  'Junior Advanced/SSR',
   'SSR',
   'Senior',
 ] as const;
+
+const DEFAULT_ROLE_TITLE = 'Junior Advanced/SSR';
+
+const DEFAULT_SALARY_PERIOD = 'Indefinite';
+
+function dateInputDefault(
+  iso: string | undefined | null,
+  fallback: string,
+): string {
+  if (!iso) return fallback;
+  return iso.slice(0, 10);
+}
 
 const RESUME_OPTIONS = [
   'Both versions',
@@ -68,6 +80,7 @@ const schema = z.object({
   roleTitle: z.string().min(1, 'Role is required'),
   position: z.nativeEnum(PositionType),
   applicationDate: z.string().min(1, 'Date is required'),
+  vacancyPostedDate: z.string().min(1, 'Date is required'),
   applicationMethod: z.nativeEnum(ApplicationMethod),
   workMode: z.nativeEnum(WorkMode),
   employmentType: z.nativeEnum(EmploymentType).optional().or(z.literal('')),
@@ -80,7 +93,6 @@ const schema = z.object({
   currency: z.string().optional(),
   salaryPeriod: z.string().optional(),
   priority: z.nativeEnum(Priority),
-  excitement: z.coerce.number().min(1).max(5).optional().or(z.literal('')),
   notes: z.string().optional(),
   tags: z.string().optional(),
   jobDescription: z.string().optional(),
@@ -164,9 +176,13 @@ export function ApplicationForm({
     defaultValues: {
       companyName: defaultValues?.companyName ?? PLACEHOLDER,
       companyUrl: defaultValues?.companyUrl ?? (isEdit ? '' : PLACEHOLDER),
-      roleTitle: defaultValues?.roleTitle ?? ROLE_OPTIONS[0],
+      roleTitle: defaultValues?.roleTitle ?? DEFAULT_ROLE_TITLE,
       position: defaultValues?.position ?? PositionType.BACKEND,
-      applicationDate: defaultValues?.applicationDate ?? todayIso(),
+      applicationDate: dateInputDefault(defaultValues?.applicationDate, todayIso()),
+      vacancyPostedDate: dateInputDefault(
+        defaultValues?.vacancyPostedDate ?? defaultValues?.applicationDate,
+        todayIso(),
+      ),
       applicationMethod:
         defaultValues?.applicationMethod ?? ApplicationMethod.LINKEDIN_EASY_APPLY,
       workMode: defaultValues?.workMode ?? WorkMode.REMOTE,
@@ -182,9 +198,9 @@ export function ApplicationForm({
         ? parseFloat(defaultValues.salaryMax)
         : '',
       currency: defaultValues?.currency ?? '',
-      salaryPeriod: defaultValues?.salaryPeriod ?? (isEdit ? '' : PLACEHOLDER),
+      salaryPeriod:
+        defaultValues?.salaryPeriod ?? (isEdit ? '' : DEFAULT_SALARY_PERIOD),
       priority: defaultValues?.priority ?? Priority.HIGH,
-      excitement: defaultValues?.excitement ?? '',
       notes: defaultValues?.notes ?? '',
       tags: defaultValues?.tags?.join(', ') ?? '',
       jobDescription: defaultValues?.jobDescription ?? '',
@@ -261,6 +277,7 @@ export function ApplicationForm({
       roleTitle: values.roleTitle,
       position: values.position,
       applicationDate: values.applicationDate,
+      vacancyPostedDate: values.vacancyPostedDate,
       applicationMethod: values.applicationMethod,
       workMode: values.workMode,
       employmentType: values.employmentType
@@ -277,8 +294,6 @@ export function ApplicationForm({
       currency: stripPlaceholder(values.currency),
       salaryPeriod: stripPlaceholder(values.salaryPeriod),
       priority: values.priority,
-      excitement:
-        typeof values.excitement === 'number' ? values.excitement : null,
       notes: stripPlaceholder(values.notes),
       tags,
       jobDescription: stripPlaceholder(values.jobDescription),
@@ -321,6 +336,12 @@ export function ApplicationForm({
           >
             <Input type="date" {...register('applicationDate')} />
           </Field>
+          <Field
+            label="Vacancy posted *"
+            error={errors.vacancyPostedDate?.message}
+          >
+            <Input type="date" {...register('vacancyPostedDate')} />
+          </Field>
           <Field label="Application method *">
             <Select {...register('applicationMethod')} options={methodOptions} />
           </Field>
@@ -335,9 +356,6 @@ export function ApplicationForm({
           </Field>
           <Field label="Location">
             <Input {...register('location')} />
-          </Field>
-          <Field label="Excitement (1-5)">
-            <Input type="number" min={1} max={5} {...register('excitement')} />
           </Field>
           <Field label="Resume used">
             <Select {...register('resumeVersion')} options={resumeOptions} />

@@ -6,13 +6,11 @@ import {
   IsDateString,
   IsEmail,
   IsEnum,
-  IsInt,
   IsNumber,
   IsOptional,
   IsString,
   IsUrl,
   IsUUID,
-  Max,
   MaxLength,
   Min,
   MinLength,
@@ -86,6 +84,14 @@ export class CreateApplicationDto {
   @IsDateString()
   applicationDate?: string;
 
+  @ApiPropertyOptional({
+    format: 'date',
+    description: 'When the vacancy was posted; defaults to application date or today.',
+  })
+  @IsOptional()
+  @IsDateString()
+  vacancyPostedDate?: string;
+
   @ApiPropertyOptional({ enum: ApplicationMethod })
   @IsOptional()
   @IsEnum(ApplicationMethod)
@@ -143,14 +149,6 @@ export class CreateApplicationDto {
   @IsOptional()
   @IsEnum(Priority)
   priority?: Priority;
-
-  @ApiPropertyOptional({ minimum: 1, maximum: 5 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(5)
-  excitement?: number;
 
   @ApiPropertyOptional({ type: [String] })
   @IsOptional()

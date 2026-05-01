@@ -197,6 +197,7 @@ model JobApplication {
   workMode          WorkMode           @default(unknown) @map("work_mode")
   employmentType    EmploymentType?    @map("employment_type")
   applicationDate   DateTime           @map("application_date") @db.Date
+  vacancyPostedDate DateTime           @default(now()) @map("vacancy_posted_date") @db.Date
   applicationMethod ApplicationMethod  @default(linkedin_easy_apply) @map("application_method")
   source            String?            @db.VarChar(100)
   platform          String?            @db.VarChar(100)
@@ -207,7 +208,6 @@ model JobApplication {
   status            ApplicationStatus  @default(applied)
   stage             ApplicationStage   @default(submitted)
   priority          Priority           @default(medium)
-  excitement        Int?               @db.SmallInt
   tags              String[]           @default([])
   notes             String?            @db.Text
   resumeVersion     String?            @map("resume_version") @db.Text

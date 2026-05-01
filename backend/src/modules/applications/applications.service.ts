@@ -28,6 +28,8 @@ export class ApplicationsService {
   async create(dto: CreateApplicationDto): Promise<JobApplication> {
     const today = new Date().toISOString().slice(0, 10);
     const applicationDate = new Date(`${dto.applicationDate ?? today}T00:00:00.000Z`);
+    const vacancyDay = dto.vacancyPostedDate ?? dto.applicationDate ?? today;
+    const vacancyPostedDate = new Date(`${vacancyDay}T00:00:00.000Z`);
     const status = dto.status ?? ApplicationStatus.APPLIED;
     const stage = dto.stage ?? this.statusResolver.defaultStageFor(status);
 
@@ -50,6 +52,7 @@ export class ApplicationsService {
           workMode: dto.workMode,
           employmentType: dto.employmentType ?? null,
           applicationDate,
+          vacancyPostedDate,
           applicationMethod: dto.applicationMethod,
           source: dto.source ?? null,
           platform: dto.platform ?? null,
@@ -60,7 +63,6 @@ export class ApplicationsService {
           status,
           stage,
           priority: dto.priority,
-          excitement: dto.excitement ?? null,
           tags: dto.tags ?? [],
           notes: dto.notes ?? null,
           resumeVersion: dto.resumeVersion ?? null,
@@ -245,6 +247,9 @@ export class ApplicationsService {
     if (dto.applicationDate !== undefined) {
       data.applicationDate = new Date(`${dto.applicationDate}T00:00:00.000Z`);
     }
+    if (dto.vacancyPostedDate !== undefined) {
+      data.vacancyPostedDate = new Date(`${dto.vacancyPostedDate}T00:00:00.000Z`);
+    }
     if (dto.applicationMethod !== undefined)
       data.applicationMethod = dto.applicationMethod;
     if (dto.source !== undefined) data.source = dto.source;
@@ -254,7 +259,6 @@ export class ApplicationsService {
     if (dto.currency !== undefined) data.currency = dto.currency;
     if (dto.salaryPeriod !== undefined) data.salaryPeriod = dto.salaryPeriod;
     if (dto.priority !== undefined) data.priority = dto.priority;
-    if (dto.excitement !== undefined) data.excitement = dto.excitement;
     if (dto.tags !== undefined) data.tags = dto.tags;
     if (dto.notes !== undefined) data.notes = dto.notes;
     if (dto.resumeVersion !== undefined) data.resumeVersion = dto.resumeVersion;
