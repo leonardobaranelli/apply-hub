@@ -6,6 +6,7 @@ import type {
   ContactRole,
   EmploymentType,
   EventChannel,
+  JobPostingLanguage,
   PositionType,
   Priority,
   SearchCompletionKey,
@@ -36,6 +37,11 @@ export const workModeLabels: Record<WorkMode, string> = {
   hybrid: 'Hybrid',
   onsite: 'On-site',
   unknown: 'Unspecified',
+};
+
+export const postingLanguageLabels: Record<JobPostingLanguage, string> = {
+  en: 'English',
+  es: 'Spanish',
 };
 
 export const employmentLabels: Record<EmploymentType, string> = {

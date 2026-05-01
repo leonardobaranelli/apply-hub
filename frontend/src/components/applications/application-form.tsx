@@ -18,11 +18,12 @@ import { todayIso, formatDate } from '@/lib/format';
 import {
   ApplicationMethod,
   EmploymentType,
+  JobPostingLanguage,
   PositionType,
   Priority,
   WorkMode,
 } from '@/types/enums';
-import { priorityLabels } from '@/types/labels';
+import { postingLanguageLabels, priorityLabels } from '@/types/labels';
 import type { JobApplication } from '@/types/models';
 import type {
   CreateApplicationInput,
@@ -77,6 +78,9 @@ const schema = z.object({
   notes: z.string().optional(),
   tags: z.string().optional(),
   jobDescription: z.string().optional(),
+  postingLanguage: z
+    .enum(['', JobPostingLanguage.EN, JobPostingLanguage.ES])
+    .optional(),
   resumeVersion: z.string().optional(),
   contactName: z.string().optional(),
   contactLinkedin: z.string().optional(),
@@ -202,6 +206,7 @@ export function ApplicationForm({
       notes: defaultValues?.notes ?? '',
       tags: defaultValues?.tags?.join(', ') ?? '',
       jobDescription: defaultValues?.jobDescription ?? '',
+      postingLanguage: defaultValues?.postingLanguage ?? '',
       resumeVersion:
         defaultValues?.resumeVersion ?? DEFAULT_RESUME_VERSION_OPTIONS[0],
       contactName: defaultValues?.contactName ?? (isEdit ? '' : PLACEHOLDER),
@@ -280,6 +285,21 @@ export function ApplicationForm({
     return literalToOptions(base);
   }, [resumeVersionOptions, defaultValues?.resumeVersion]);
 
+  const postingLanguageOptions = useMemo(
+    () => [
+      { value: '', label: 'Sin especificar' },
+      {
+        value: JobPostingLanguage.EN,
+        label: postingLanguageLabels[JobPostingLanguage.EN],
+      },
+      {
+        value: JobPostingLanguage.ES,
+        label: postingLanguageLabels[JobPostingLanguage.ES],
+      },
+    ],
+    [],
+  );
+
   const submit = async (values: FormValues): Promise<void> => {
     const tags = values.tags
       ? values.tags.split(',').map((t) => t.trim()).filter(Boolean)
@@ -311,6 +331,11 @@ export function ApplicationForm({
       notes: stripPlaceholder(values.notes),
       tags,
       jobDescription: stripPlaceholder(values.jobDescription),
+      postingLanguage:
+        values.postingLanguage === JobPostingLanguage.EN ||
+        values.postingLanguage === JobPostingLanguage.ES
+          ? values.postingLanguage
+          : null,
       resumeVersion: values.resumeVersion || null,
       contactName: stripPlaceholder(values.contactName),
       contactLinkedin: stripPlaceholder(values.contactLinkedin),
@@ -361,6 +386,12 @@ export function ApplicationForm({
             error={errors.vacancyPostedDate?.message}
           >
             <Input type="date" {...register('vacancyPostedDate')} />
+          </Field>
+          <Field label="Idioma de la propuesta laboral">
+            <Select
+              {...register('postingLanguage')}
+              options={postingLanguageOptions}
+            />
           </Field>
           <Field label="Application method *">
             <Select {...register('applicationMethod')} options={methodOptions} />

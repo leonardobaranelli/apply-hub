@@ -15,6 +15,7 @@ import {
   Min,
   MinLength,
 } from 'class-validator';
+import { JobPostingLanguage } from '@prisma/client';
 import {
   ApplicationStage,
   ApplicationStatus,
@@ -179,6 +180,14 @@ export class CreateApplicationDto {
   @IsOptional()
   @IsString()
   resumeVersion?: string;
+
+  @ApiPropertyOptional({
+    enum: JobPostingLanguage,
+    description: 'Language of the job posting (vacancy text)',
+  })
+  @IsOptional()
+  @IsEnum(JobPostingLanguage)
+  postingLanguage?: JobPostingLanguage | null;
 
   // ── Vacancy contact ────────────────────────────────────────────────
   @ApiPropertyOptional()

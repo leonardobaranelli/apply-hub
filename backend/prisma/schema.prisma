@@ -92,6 +92,12 @@ enum Priority {
   high
 }
 
+/// Language of the job posting / vacancy text (English vs Spanish).
+enum JobPostingLanguage {
+  en
+  es
+}
+
 enum ContactRole {
   recruiter
   hiring_manager
@@ -211,6 +217,7 @@ model JobApplication {
   tags              String[]           @default([])
   notes             String?            @db.Text
   resumeVersion     String?            @map("resume_version") @db.Text
+  postingLanguage   JobPostingLanguage? @map("posting_language")
   // Vacancy contact (denormalized, optional)
   contactName       String?            @map("contact_name") @db.VarChar(200)
   contactLinkedin   String?            @map("contact_linkedin") @db.VarChar(500)
