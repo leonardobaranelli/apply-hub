@@ -10,10 +10,8 @@ import {
 } from 'class-validator';
 import { PaginationDto } from '../../../common/dto/pagination.dto';
 import {
-  ApplicationMethod,
   ApplicationStage,
   ApplicationStatus,
-  PositionType,
   Priority,
   WorkMode,
 } from '../domain/application.enums';
@@ -55,19 +53,19 @@ export class QueryApplicationDto extends PaginationDto {
   @IsEnum(ApplicationStage, { each: true })
   stage?: ApplicationStage[];
 
-  @ApiPropertyOptional({ enum: PositionType, isArray: true })
+  @ApiPropertyOptional({ type: [String] })
   @IsOptional()
-  @Transform(({ value }) => toArray<PositionType>(value))
+  @Transform(({ value }) => toArray<string>(value))
   @IsArray()
-  @IsEnum(PositionType, { each: true })
-  position?: PositionType[];
+  @IsString({ each: true })
+  position?: string[];
 
-  @ApiPropertyOptional({ enum: ApplicationMethod, isArray: true })
+  @ApiPropertyOptional({ type: [String] })
   @IsOptional()
-  @Transform(({ value }) => toArray<ApplicationMethod>(value))
+  @Transform(({ value }) => toArray<string>(value))
   @IsArray()
-  @IsEnum(ApplicationMethod, { each: true })
-  method?: ApplicationMethod[];
+  @IsString({ each: true })
+  method?: string[];
 
   @ApiPropertyOptional({ enum: WorkMode, isArray: true })
   @IsOptional()

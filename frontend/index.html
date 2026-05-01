@@ -1,6 +1,22 @@
 <!doctype html>
-<html lang="en" class="dark">
+<html lang="en">
   <head>
+    <script>
+      (function () {
+        var presets = ['ocean', 'violet', 'emerald', 'rose', 'amber', 'slate'];
+        var modes = ['dark', 'dim', 'light'];
+        var t = 'ocean';
+        var mode = 'dark';
+        try {
+          var s = localStorage.getItem('applyhub-theme');
+          if (s && presets.indexOf(s) >= 0) t = s;
+          var m = localStorage.getItem('applyhub-appearance');
+          if (m && modes.indexOf(m) >= 0) mode = m;
+        } catch (e) {}
+        document.documentElement.classList.add(mode);
+        document.documentElement.classList.add('theme-preset-' + t);
+      })();
+    </script>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />

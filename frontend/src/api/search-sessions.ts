@@ -1,9 +1,8 @@
 import { api, type Paginated } from '@/lib/api';
-import type { SearchPlatform } from '@/types/enums';
 import type { JobSearchSession } from '@/types/models';
 
 export interface CreateSearchSessionInput {
-  platform: SearchPlatform;
+  platform: string;
   platformOther?: string | null;
   queryTitle: string;
   filterDescription?: string | null;
@@ -21,7 +20,7 @@ export interface SearchSessionFilters {
   page?: number;
   limit?: number;
   search?: string;
-  platform?: SearchPlatform;
+  platform?: string;
   fromDate?: string;
   toDate?: string;
 }

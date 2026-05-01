@@ -1,12 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { JobApplication, Prisma, SearchPlatform } from '@prisma/client';
+import { JobApplication, Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
   ACTIVE_STATUSES,
-  ApplicationMethod,
   ApplicationStatus,
   FUNNEL_ORDER,
-  PositionType,
   WorkMode,
   funnelIndex,
 } from '../applications/domain/application.enums';
@@ -52,11 +50,8 @@ export class DashboardService {
 
     const kpis = this.computeKpis(apps);
     const byStatus = this.distribution(apps, (a) => a.status as ApplicationStatus);
-    const byPosition = this.distribution(apps, (a) => a.position as PositionType);
-    const byMethod = this.distribution(
-      apps,
-      (a) => a.applicationMethod as ApplicationMethod,
-    );
+    const byPosition = this.distribution(apps, (a) => a.position);
+    const byMethod = this.distribution(apps, (a) => a.applicationMethod);
     const byWorkMode = this.distribution(apps, (a) => a.workMode as WorkMode);
     const funnel = this.computeFunnel(apps);
     const applicationsPerDay = this.computeTimeSeries(apps);
@@ -68,8 +63,8 @@ export class DashboardService {
     return {
       kpis,
       byStatus: byStatus as DistributionItem<ApplicationStatus>[],
-      byPosition: byPosition as DistributionItem<PositionType>[],
-      byMethod: byMethod as DistributionItem<ApplicationMethod>[],
+      byPosition: byPosition as DistributionItem<string>[],
+      byMethod: byMethod as DistributionItem<string>[],
       byWorkMode: byWorkMode as DistributionItem<WorkMode>[],
       funnel,
       applicationsPerDay,
@@ -106,7 +101,7 @@ export class DashboardService {
     );
     const byPlatform = this.sessionFieldDistribution(
       sessions,
-      (s) => s.platform as SearchPlatform,
+      (s) => s.platform,
     );
     const byCompletion = this.sessionFieldDistribution(
       sessions,
@@ -323,9 +318,9 @@ export class DashboardService {
   private computeMethodEffectiveness(
     apps: JobApplication[],
   ): MethodEffectiveness[] {
-    const grouped = new Map<ApplicationMethod, JobApplication[]>();
+    const grouped = new Map<string, JobApplication[]>();
     for (const app of apps) {
-      const method = app.applicationMethod as ApplicationMethod;
+      const method = app.applicationMethod;
       const list = grouped.get(method) ?? [];
       list.push(app);
       grouped.set(method, list);

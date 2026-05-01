@@ -190,15 +190,15 @@ model JobApplication {
   companyName       String             @map("company_name") @db.VarChar(200)
   companyUrl        String?            @map("company_url") @db.VarChar(500)
   roleTitle         String             @map("role_title") @db.VarChar(250)
-  position          PositionType       @default(backend)
+  position          String             @default("backend") @map("position") @db.VarChar(48)
   jobDescription    String?            @map("job_description") @db.Text
   jobUrl            String?            @map("job_url") @db.VarChar(500)
   location          String?            @db.VarChar(200)
   workMode          WorkMode           @default(unknown) @map("work_mode")
-  employmentType    EmploymentType?    @map("employment_type")
+  employmentType    String?            @map("employment_type") @db.VarChar(48)
   applicationDate   DateTime           @map("application_date") @db.Date
   vacancyPostedDate DateTime           @default(now()) @map("vacancy_posted_date") @db.Date
-  applicationMethod ApplicationMethod  @default(linkedin_easy_apply) @map("application_method")
+  applicationMethod String             @default("linkedin_easy_apply") @map("application_method") @db.VarChar(64)
   source            String?            @db.VarChar(100)
   platform          String?            @db.VarChar(100)
   salaryMin         Decimal?           @map("salary_min") @db.Decimal(12, 2)
@@ -243,7 +243,7 @@ model JobApplication {
 /// Logged job-search session (query, filters, date window, platform) for reproducibility and analytics.
 model JobSearchSession {
   id                 String          @id @default(uuid()) @db.Uuid
-  platform           SearchPlatform  @default(other)
+  platform           String          @default("other") @map("platform") @db.VarChar(48)
   platformOther      String?         @map("platform_other") @db.VarChar(100)
   queryTitle         String          @map("query_title") @db.VarChar(250)
   filterDescription  String?         @map("filter_description") @db.Text
@@ -300,4 +300,16 @@ model Template {
 
   @@index([type])
   @@map("templates")
+}
+
+/// Single-row platform preferences (UI theme, form labels, selector order).
+model PlatformSettings {
+  id              String   @id @db.VarChar(32)
+  themeId         String   @default("ocean") @map("theme_id") @db.VarChar(32)
+  appearanceMode  String   @default("dark") @map("appearance_mode") @db.VarChar(16)
+  formConfig      Json     @map("form_config") @db.JsonB
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("platform_settings")
 }

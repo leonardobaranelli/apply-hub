@@ -1,7 +1,18 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { JobApplication, Prisma } from '@prisma/client';
 import { PaginatedResult } from '../../common/dto/pagination.dto';
 import { PrismaService } from '../../prisma/prisma.service';
+import {
+  allEmploymentIds,
+  allMethodIds,
+  allPositionIds,
+} from '../platform-settings/domain/form-config.helpers';
+import type { FormConfigDto } from '../platform-settings/dto/form-config.dto';
+import { PlatformSettingsService } from '../platform-settings/platform-settings.service';
 import { ApplicationEventType } from '../application-events/domain/event.enums';
 import {
   ACTIVE_STATUSES,
@@ -20,12 +31,19 @@ export class ApplicationsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly statusResolver: StatusResolverService,
+    private readonly platformSettings: PlatformSettingsService,
   ) {}
 
   // ───────────────────────────────────────────────────────────────────
   //  CREATE
   // ───────────────────────────────────────────────────────────────────
   async create(dto: CreateApplicationDto): Promise<JobApplication> {
+    await this.assertApplicationSelectors({
+      applicationMethod: dto.applicationMethod ?? 'linkedin_easy_apply',
+      position: dto.position ?? 'backend',
+      employmentType: dto.employmentType ?? null,
+    });
+
     const today = new Date().toISOString().slice(0, 10);
     const applicationDate = new Date(`${dto.applicationDate ?? today}T00:00:00.000Z`);
     const vacancyDay = dto.vacancyPostedDate ?? dto.applicationDate ?? today;
@@ -234,6 +252,12 @@ export class ApplicationsService {
     dto: UpdateApplicationDto,
   ): Promise<JobApplication> {
     await this.assertExists(id);
+    await this.assertApplicationSelectors({
+      applicationMethod: dto.applicationMethod,
+      position: dto.position,
+      employmentType: dto.employmentType,
+    });
+
     const data: Prisma.JobApplicationUpdateInput = {};
     if (dto.companyName !== undefined) data.companyName = dto.companyName.trim();
     if (dto.companyUrl !== undefined) data.companyUrl = dto.companyUrl;
@@ -282,6 +306,35 @@ export class ApplicationsService {
       where: { id },
       data,
     });
+  }
+
+  private async assertApplicationSelectors(parts: {
+    applicationMethod?: string;
+    position?: string;
+    employmentType?: string | null;
+  }): Promise<void> {
+    const hasAny =
+      parts.applicationMethod !== undefined ||
+      parts.position !== undefined ||
+      parts.employmentType !== undefined;
+    if (!hasAny) return;
+
+    const fc = (await this.platformSettings.getFormConfig()) as FormConfigDto;
+    if (parts.applicationMethod !== undefined) {
+      if (!allMethodIds(fc).has(parts.applicationMethod)) {
+        throw new BadRequestException('Invalid applicationMethod');
+      }
+    }
+    if (parts.position !== undefined) {
+      if (!allPositionIds(fc).has(parts.position)) {
+        throw new BadRequestException('Invalid position');
+      }
+    }
+    if (parts.employmentType !== undefined && parts.employmentType !== null) {
+      if (!allEmploymentIds(fc).has(parts.employmentType)) {
+        throw new BadRequestException('Invalid employmentType');
+      }
+    }
   }
 
   // ───────────────────────────────────────────────────────────────────

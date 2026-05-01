@@ -22,19 +22,13 @@ import { FunnelChart } from '@/components/dashboard/funnel-chart';
 import { KpiCard } from '@/components/dashboard/kpi-card';
 import { TimeSeriesChart } from '@/components/dashboard/time-series-chart';
 import { PageHeader } from '@/components/layout/page-header';
+import { usePlatformSettings } from '@/context/platform-settings-context';
 import { useDashboard, useSearchActivity } from '@/hooks/use-dashboard';
 import { useMarkStaleAsGhosted } from '@/hooks/use-applications';
 import { cn } from '@/lib/cn';
 import { formatDate, formatDateTime, formatNumber } from '@/lib/format';
 import type { SearchSessionSummary } from '@/types/models';
-import {
-  methodLabels,
-  positionLabels,
-  searchCompletionLabels,
-  searchPlatformLabels,
-  statusLabels,
-  workModeLabels,
-} from '@/types/labels';
+import { searchCompletionLabels, statusLabels } from '@/types/labels';
 
 type DashboardTab = 'pipeline' | 'search';
 
@@ -43,11 +37,15 @@ const TABS: ReadonlyArray<{ id: DashboardTab; label: string }> = [
   { id: 'search', label: 'Search activity' },
 ];
 
-function sessionPlatformLabel(s: Pick<SearchSessionSummary, 'platform' | 'platformOther'>): string {
+function sessionPlatformLabel(
+  s: Pick<SearchSessionSummary, 'platform' | 'platformOther'>,
+  platformLabels: Record<string, string>,
+): string {
   if (s.platform === 'other' && s.platformOther?.trim()) {
-    return `${searchPlatformLabels.other} (${s.platformOther.trim()})`;
+    const base = platformLabels.other ?? 'Other';
+    return `${base} (${s.platformOther.trim()})`;
   }
-  return searchPlatformLabels[s.platform];
+  return platformLabels[s.platform] ?? s.platform;
 }
 
 export function DashboardPage() {
@@ -146,6 +144,11 @@ function PipelineDashboardPanel({
   fromDate?: string;
   toDate?: string;
 }) {
+  const {
+    effectiveMethodLabels,
+    effectiveWorkModeLabels,
+    effectivePositionLabels,
+  } = usePlatformSettings();
   const { data, isLoading, isError } = useDashboard({ fromDate, toDate });
   const ghostMutation = useMarkStaleAsGhosted();
 
@@ -249,7 +252,7 @@ function PipelineDashboardPanel({
           title="By application method"
           items={byMethod.map((m) => ({
             key: m.key,
-            label: methodLabels[m.key],
+            label: effectiveMethodLabels[m.key] ?? m.key,
             count: m.count,
             percentage: m.percentage,
           }))}
@@ -258,7 +261,7 @@ function PipelineDashboardPanel({
           title="By position type"
           items={byPosition.map((p) => ({
             key: p.key,
-            label: positionLabels[p.key],
+            label: effectivePositionLabels[p.key] ?? p.key,
             count: p.count,
             percentage: p.percentage,
           }))}
@@ -267,7 +270,7 @@ function PipelineDashboardPanel({
           title="By work mode"
           items={byWorkMode.map((w) => ({
             key: w.key,
-            label: workModeLabels[w.key],
+            label: effectiveWorkModeLabels[w.key],
             count: w.count,
             percentage: w.percentage,
           }))}
@@ -299,7 +302,9 @@ function PipelineDashboardPanel({
                   <tbody>
                     {data.methodEffectiveness.map((m) => (
                       <tr key={m.method} className="border-b border-border/50">
-                        <td className="py-2 pr-3">{methodLabels[m.method]}</td>
+                        <td className="py-2 pr-3">
+                          {effectiveMethodLabels[m.method] ?? m.method}
+                        </td>
                         <td className="py-2 pr-3 text-right font-medium">
                           {m.total}
                         </td>
@@ -386,6 +391,7 @@ function SearchActivityPanel({
   fromDate?: string;
   toDate?: string;
 }) {
+  const { effectiveSearchPlatformLabels } = usePlatformSettings();
   const { data, isLoading, isError } = useSearchActivity({ fromDate, toDate });
 
   if (isLoading) return <PageLoader />;
@@ -449,10 +455,13 @@ function SearchActivityPanel({
             title="By platform"
             items={data.byPlatform.map((row) => ({
               key: row.key,
-              label: sessionPlatformLabel({
-                platform: row.key,
-                platformOther: null,
-              }),
+              label: sessionPlatformLabel(
+                {
+                  platform: row.key,
+                  platformOther: null,
+                },
+                effectiveSearchPlatformLabels,
+              ),
               count: row.count,
               percentage: row.percentage,
             }))}
@@ -509,7 +518,8 @@ function SearchActivityPanel({
                   >
                     <p className="font-medium">{s.queryTitle}</p>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      {sessionPlatformLabel(s)} · {formatDateTime(s.searchedAt)} ·{' '}
+                      {sessionPlatformLabel(s, effectiveSearchPlatformLabels)} ·{' '}
+                      {formatDateTime(s.searchedAt)} ·{' '}
                       {searchCompletionLabels[s.isComplete ? 'complete' : 'active']} ·{' '}
                       {s.applicationsCount} apps
                     </p>

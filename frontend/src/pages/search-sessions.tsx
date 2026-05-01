@@ -14,13 +14,11 @@ import { Select } from '@/components/ui/select';
 import { PageLoader } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { PageHeader } from '@/components/layout/page-header';
+import { usePlatformSettings } from '@/context/platform-settings-context';
 import { searchSessionKeys, useDeleteSearchSession, useSearchSessionsList } from '@/hooks/use-search-sessions';
 import { formatDate, formatDateTime } from '@/lib/format';
 import { SearchPlatform } from '@/types/enums';
-import {
-  searchCompletionLabels,
-  searchPlatformLabels,
-} from '@/types/labels';
+import { searchCompletionLabels } from '@/types/labels';
 import type { JobSearchSession } from '@/types/models';
 import type { CreateSearchSessionInput } from '@/api/search-sessions';
 import { searchSessionsApi } from '@/api/search-sessions';
@@ -33,16 +31,22 @@ function dateInputToday(): string {
   return format(new Date(), 'yyyy-MM-dd');
 }
 
-function platformLabel(s: Pick<JobSearchSession, 'platform' | 'platformOther'>): string {
-  if (s.platform === 'other' && s.platformOther?.trim()) {
-    return `${searchPlatformLabels.other} (${s.platformOther.trim()})`;
+function platformLabel(
+  s: Pick<JobSearchSession, 'platform' | 'platformOther'>,
+  labels: Record<string, string>,
+): string {
+  if (s.platform === SearchPlatform.OTHER && s.platformOther?.trim()) {
+    const base = labels.other ?? 'Other';
+    return `${base} (${s.platformOther.trim()})`;
   }
-  return searchPlatformLabels[s.platform];
+  return labels[s.platform] ?? s.platform;
 }
 
 export function SearchSessionsPage() {
+  const { searchPlatformSelectOptions, effectiveSearchPlatformLabels } =
+    usePlatformSettings();
   const [search, setSearch] = useState('');
-  const [platform, setPlatform] = useState<SearchPlatform | ''>('');
+  const [platform, setPlatform] = useState('');
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
   const [openCreate, setOpenCreate] = useState(false);
@@ -63,9 +67,9 @@ export function SearchSessionsPage() {
 
   const platformOptions = [
     { value: '', label: 'All platforms' },
-    ...Object.values(SearchPlatform).map((v) => ({
-      value: v,
-      label: searchPlatformLabels[v],
+    ...searchPlatformSelectOptions.map((o) => ({
+      value: o.value,
+      label: o.label,
     })),
   ];
 
@@ -95,7 +99,7 @@ export function SearchSessionsPage() {
           <Label>Platform</Label>
           <Select
             value={platform}
-            onChange={(e) => setPlatform(e.target.value as SearchPlatform | '')}
+            onChange={(e) => setPlatform(e.target.value)}
             options={platformOptions}
           />
         </div>
@@ -152,6 +156,7 @@ export function SearchSessionsPage() {
             <SessionCard
               key={session.id}
               session={session}
+              platformLabels={effectiveSearchPlatformLabels}
               onEdit={() => setEditing(session)}
             />
           ))}
@@ -162,6 +167,7 @@ export function SearchSessionsPage() {
         open={openCreate}
         onClose={() => setOpenCreate(false)}
         title="Log search session"
+        searchPlatformSelectOptions={searchPlatformSelectOptions}
       />
 
       {editing ? (
@@ -171,6 +177,7 @@ export function SearchSessionsPage() {
           onClose={() => setEditing(null)}
           title="Edit search session"
           session={editing}
+          searchPlatformSelectOptions={searchPlatformSelectOptions}
         />
       ) : null}
     </>
@@ -179,9 +186,11 @@ export function SearchSessionsPage() {
 
 function SessionCard({
   session,
+  platformLabels,
   onEdit,
 }: {
   session: JobSearchSession;
+  platformLabels: Record<string, string>;
   onEdit: () => void;
 }) {
   const remove = useDeleteSearchSession();
@@ -194,7 +203,7 @@ function SessionCard({
             {session.queryTitle}
           </CardTitle>
           <div className="mt-2 flex flex-wrap gap-1">
-            <Badge variant="secondary">{platformLabel(session)}</Badge>
+            <Badge variant="secondary">{platformLabel(session, platformLabels)}</Badge>
             <Badge variant="outline">
               {searchCompletionLabels[session.isComplete ? 'complete' : 'active']}
             </Badge>
@@ -253,13 +262,20 @@ function SessionFormModal({
   onClose,
   title,
   session,
+  searchPlatformSelectOptions,
 }: {
   open: boolean;
   onClose: () => void;
   title: string;
   session?: JobSearchSession;
+  searchPlatformSelectOptions: Array<{ value: string; label: string }>;
 }) {
-  const [platform, setPlatform] = useState<SearchPlatform>(SearchPlatform.LINKEDIN);
+  const defaultPlatform =
+    searchPlatformSelectOptions.some((o) => o.value === SearchPlatform.LINKEDIN)
+      ? SearchPlatform.LINKEDIN
+      : (searchPlatformSelectOptions[0]?.value ?? SearchPlatform.LINKEDIN);
+
+  const [platform, setPlatform] = useState<string>(defaultPlatform);
   const [platformOther, setPlatformOther] = useState('');
   const [queryTitle, setQueryTitle] = useState('');
   const [filterDescription, setFilterDescription] = useState('');
@@ -288,7 +304,7 @@ function SessionFormModal({
       setSearchUrl(session.searchUrl ?? '');
       setNotes(session.notes ?? '');
     } else {
-      setPlatform(SearchPlatform.LINKEDIN);
+      setPlatform(defaultPlatform);
       setPlatformOther('');
       setQueryTitle('');
       setFilterDescription('');
@@ -299,7 +315,7 @@ function SessionFormModal({
       setSearchUrl('');
       setNotes('');
     }
-  }, [open, session]);
+  }, [open, session, defaultPlatform]);
 
   const qc = useQueryClient();
   const saveMutation = useMutation({
@@ -351,10 +367,17 @@ function SessionFormModal({
 
   const submitting = saveMutation.isPending;
 
-  const platformFieldOptions = Object.values(SearchPlatform).map((v) => ({
-    value: v,
-    label: searchPlatformLabels[v],
-  }));
+  const platformFieldOptions = useMemo(() => {
+    const base = searchPlatformSelectOptions.map((o) => ({
+      value: o.value,
+      label: o.label,
+    }));
+    const cur = session?.platform;
+    if (cur && !base.some((b) => b.value === cur)) {
+      return [...base, { value: cur, label: cur }];
+    }
+    return base;
+  }, [searchPlatformSelectOptions, session?.platform]);
 
   return (
     <Modal
@@ -379,7 +402,7 @@ function SessionFormModal({
             <Label className="mb-1 block">Platform *</Label>
             <Select
               value={platform}
-              onChange={(e) => setPlatform(e.target.value as SearchPlatform)}
+              onChange={(e) => setPlatform(e.target.value)}
               options={platformFieldOptions}
             />
           </div>
