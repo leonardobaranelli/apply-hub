@@ -110,7 +110,7 @@ export class DashboardService {
     );
     const byCompletion = this.sessionFieldDistribution(
       sessions,
-      (s): SearchCompletionKey => (s.isComplete ? 'complete' : 'incomplete'),
+      (s): SearchCompletionKey => (s.isComplete ? 'complete' : 'active'),
     );
     const searchesPerDay = this.computeSearchSessionsTimeSeries(sessions);
     const topQueries = this.computeTopSearchQueries(sessions);

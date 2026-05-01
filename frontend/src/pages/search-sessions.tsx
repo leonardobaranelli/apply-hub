@@ -196,7 +196,7 @@ function SessionCard({
           <div className="mt-2 flex flex-wrap gap-1">
             <Badge variant="secondary">{platformLabel(session)}</Badge>
             <Badge variant="outline">
-              {searchCompletionLabels[session.isComplete ? 'complete' : 'incomplete']}
+              {searchCompletionLabels[session.isComplete ? 'complete' : 'active']}
             </Badge>
           </div>
         </div>
@@ -447,7 +447,7 @@ function SessionFormModal({
                 onChange={(e) => setIsComplete(e.target.checked)}
                 className="h-4 w-4 rounded border-border"
               />
-              Search completed (I finished this run)
+              Mark search as complete (still active if unchecked)
             </label>
           </div>
           <div className="md:col-span-2">
