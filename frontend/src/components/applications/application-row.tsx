@@ -89,7 +89,10 @@ export function ApplicationRow({ application }: Props) {
           <p>Applied {formatRelative(application.createdAt)}</p>
         )}
         {application.firstResponseAt ? (
-          <p className="mt-0.5 text-info">
+          <p
+            className="mt-0.5 font-medium"
+            style={{ color: 'hsl(var(--chart-2))' }}
+          >
             Response {formatRelative(application.firstResponseAt)}
           </p>
         ) : null}

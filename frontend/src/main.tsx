@@ -9,13 +9,17 @@ import {
   usePlatformSettings,
 } from '@/context/platform-settings-context';
 import type { AppearanceMode } from '@/lib/theme-presets';
+import { isAppearanceMode } from '@/lib/theme-presets';
 import { queryClient } from './lib/query-client';
 import './index.css';
 
+const LIGHT_SHELL_APPEARANCES = new Set<AppearanceMode>(['soft', 'light']);
+
 function ThemeAwareToaster(): React.ReactElement {
   const { settings } = usePlatformSettings();
-  const appearance = (settings?.appearanceMode ?? 'dark') as AppearanceMode;
-  const theme = appearance === 'light' ? 'light' : 'dark';
+  const raw = settings?.appearanceMode ?? 'dark';
+  const appearance: AppearanceMode = isAppearanceMode(raw) ? raw : 'dark';
+  const theme = LIGHT_SHELL_APPEARANCES.has(appearance) ? 'light' : 'dark';
 
   return (
     <Toaster

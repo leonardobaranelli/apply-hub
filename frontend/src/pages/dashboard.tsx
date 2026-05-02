@@ -25,6 +25,7 @@ import { PageHeader } from '@/components/layout/page-header';
 import { usePlatformSettings } from '@/context/platform-settings-context';
 import { useDashboard, useSearchActivity } from '@/hooks/use-dashboard';
 import { useMarkStaleAsGhosted } from '@/hooks/use-applications';
+import { chartColor } from '@/lib/chart-palette';
 import { cn } from '@/lib/cn';
 import { formatDate, formatDateTime, formatNumber } from '@/lib/format';
 import type { SearchSessionSummary } from '@/types/models';
@@ -170,26 +171,26 @@ function PipelineDashboardPanel({
           label="Total"
           value={formatNumber(kpis.total)}
           icon={Briefcase}
-          accent="primary"
+          accent="chart1"
         />
         <KpiCard
           label="Active"
           value={formatNumber(kpis.active)}
           icon={Sparkles}
-          accent="info"
+          accent="chart2"
           hint={`${data.upcomingFollowUps ?? 0} need follow-up`}
         />
         <KpiCard
           label="Interviewing"
           value={formatNumber(kpis.interviewing)}
           icon={Target}
-          accent="warning"
+          accent="chart3"
         />
         <KpiCard
           label="Offers"
           value={formatNumber(kpis.offers)}
           icon={Trophy}
-          accent="success"
+          accent="chart5"
           hint={`${formatNumber(kpis.accepted)} accepted`}
         />
       </div>
@@ -199,20 +200,20 @@ function PipelineDashboardPanel({
           label="Response rate"
           value={`${kpis.responseRate.toFixed(1)}%`}
           icon={TrendingUp}
-          accent="info"
+          accent="chart1"
           hint={`${formatNumber(kpis.responded)} responded`}
         />
         <KpiCard
           label="Interview rate"
           value={`${kpis.interviewRate.toFixed(1)}%`}
           icon={TrendingUp}
-          accent="primary"
+          accent="chart3"
         />
         <KpiCard
           label="Offer rate"
           value={`${kpis.offerRate.toFixed(1)}%`}
           icon={CheckCircle2}
-          accent="success"
+          accent="chart5"
         />
         <KpiCard
           label="Days to 1st response"
@@ -222,7 +223,7 @@ function PipelineDashboardPanel({
               : '—'
           }
           icon={Clock}
-          accent="warning"
+          accent="chart4"
           hint={
             kpis.avgDaysToOffer !== null
               ? `${kpis.avgDaysToOffer.toFixed(1)} days to offer`
@@ -308,13 +309,22 @@ function PipelineDashboardPanel({
                         <td className="py-2 pr-3 text-right font-medium">
                           {m.total}
                         </td>
-                        <td className="py-2 pr-3 text-right text-info">
+                        <td
+                          className="py-2 pr-3 text-right font-medium"
+                          style={{ color: chartColor(1) }}
+                        >
                           {m.responseRate.toFixed(1)}%
                         </td>
-                        <td className="py-2 pr-3 text-right text-primary">
+                        <td
+                          className="py-2 pr-3 text-right font-medium"
+                          style={{ color: chartColor(3) }}
+                        >
                           {m.interviewRate.toFixed(1)}%
                         </td>
-                        <td className="py-2 text-right text-success">
+                        <td
+                          className="py-2 text-right font-medium"
+                          style={{ color: chartColor(5) }}
+                        >
                           {m.offerRate.toFixed(1)}%
                         </td>
                       </tr>
@@ -430,13 +440,13 @@ function SearchActivityPanel({
           label="Sessions logged"
           value={formatNumber(data.totalSessions)}
           icon={Search}
-          accent="primary"
+          accent="chart1"
         />
         <KpiCard
           label="Applications linked"
           value={formatNumber(data.linkedApplicationsCount)}
           icon={Briefcase}
-          accent="info"
+          accent="chart3"
           hint={
             data.totalSessions === 0
               ? 'link from application form'

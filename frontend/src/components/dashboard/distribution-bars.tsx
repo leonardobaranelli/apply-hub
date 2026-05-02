@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { categoricalChartColor } from '@/lib/chart-palette';
 
 interface DistributionItem {
   key: string;
@@ -26,23 +27,31 @@ export function DistributionBars({ title, items, emptyMessage }: Props) {
             {emptyMessage ?? 'No data yet'}
           </p>
         ) : (
-          items.map((item) => (
-            <div key={item.key} className="space-y-1">
-              <div className="flex items-center justify-between text-sm">
-                <span className="font-medium">{item.label}</span>
-                <span className="text-muted-foreground">
-                  {item.count}{' '}
-                  <span className="text-xs">({item.percentage.toFixed(1)}%)</span>
-                </span>
+          items.map((item, idx) => {
+            const background = categoricalChartColor(idx);
+            return (
+              <div key={item.key} className="space-y-1">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="font-medium">{item.label}</span>
+                  <span className="text-muted-foreground">
+                    {item.count}{' '}
+                    <span className="text-xs">
+                      ({item.percentage.toFixed(1)}%)
+                    </span>
+                  </span>
+                </div>
+                <div className="h-2 w-full overflow-hidden rounded-full bg-secondary">
+                  <div
+                    className="h-full rounded-full transition-all"
+                    style={{
+                      width: `${(item.count / max) * 100}%`,
+                      background,
+                    }}
+                  />
+                </div>
               </div>
-              <div className="h-2 w-full overflow-hidden rounded-full bg-secondary">
-                <div
-                  className="h-full rounded-full bg-primary transition-all"
-                  style={{ width: `${(item.count / max) * 100}%` }}
-                />
-              </div>
-            </div>
-          ))
+            );
+          })
         )}
       </CardContent>
     </Card>

@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { cn } from '@/lib/cn';
+import { chartForeground, ordinalChartColor } from '@/lib/chart-palette';
 import type { ApplicationStatus } from '@/types/enums';
 import { statusLabels } from '@/types/labels';
 
@@ -21,6 +21,7 @@ export function FunnelChart({ steps }: { steps: FunnelStep[] }) {
       <CardContent className="space-y-3">
         {steps.map((step, idx) => {
           const widthPct = Math.max(8, (step.count / max) * 100);
+          const background = ordinalChartColor(idx, steps.length);
           return (
             <div key={step.status} className="flex items-center gap-3">
               <div className="w-32 text-sm font-medium text-muted-foreground">
@@ -29,15 +30,12 @@ export function FunnelChart({ steps }: { steps: FunnelStep[] }) {
               <div className="flex flex-1 items-center gap-3">
                 <div className="relative h-9 flex-1 overflow-hidden rounded-md bg-secondary">
                   <div
-                    className={cn(
-                      'absolute inset-y-0 left-0 flex items-center justify-end px-3 text-sm font-semibold transition-all',
-                      idx < 3
-                        ? 'bg-info text-info-foreground'
-                        : idx < 5
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-success text-success-foreground',
-                    )}
-                    style={{ width: `${widthPct}%` }}
+                    className="absolute inset-y-0 left-0 flex items-center justify-end px-3 text-sm font-semibold transition-all"
+                    style={{
+                      width: `${widthPct}%`,
+                      background,
+                      color: chartForeground,
+                    }}
                   >
                     {step.count}
                   </div>
