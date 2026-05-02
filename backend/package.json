@@ -13,7 +13,7 @@
     "lint": "eslint \"{src,test}/**/*.ts\" --fix",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "prisma:generate": "prisma generate",
-    "prisma:db:push": "prisma db push",
+    "prisma:db:push": "node scripts/ensure-text-selector-columns.mjs && prisma db push",
     "prisma:migrate:dev": "prisma migrate dev",
     "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:studio": "node scripts/prisma-studio-local.mjs",
