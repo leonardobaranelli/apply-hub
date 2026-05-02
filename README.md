@@ -1,349 +1,471 @@
 # ApplyHub
 
-Personal full‑stack hub to track every job application as a first‑class entity, with status, stage, timeline, contacts, the search session that produced it, and the analytics derived from all of it.
+Personal full‑stack hub that treats **every application as a first‑class entity**: status, stage, priority, salary, contacts, originating search session, auditable timeline, and derived analytics — all in one queryable place.
+
+> Single‑operator by design. **There is no authentication**: it runs behind a network perimeter you control (local network, tunnel, VPN, reverse proxy with auth).
 
 ---
 
-## Why it exists
+## 1. Stack
 
-Job searching produces a lot of short‑lived context: an open posting tab, a recruiter message, a follow‑up TODO, a resume version, the search filters that surfaced the role. ApplyHub captures that context as data so the lifecycle of each opportunity — and the patterns across all of them — stay queryable from one place. Authentication is intentionally disabled: ApplyHub is meant to run as a single‑operator tool behind a network boundary you control.
-
-## Stack
-
-- **API**: NestJS 10, Prisma 5, PostgreSQL 16, class‑validator, class‑transformer, Swagger.
-- **Web**: React 18 + Vite 6, TypeScript 5, TanStack Query 5, React Hook Form + Zod, Tailwind CSS 3, Recharts 2, Sonner toasts, Lucide icons.
-- **Infra**: Docker Compose for Postgres + API + Web; multi‑stage Dockerfiles with `development` and `production` targets (Nest in watch mode for dev, `nginx:alpine` serving the SPA for prod).
+| Layer | Technology |
+| ----- | ---------- |
+| API | NestJS 10 · Prisma 5 · PostgreSQL 16 · class‑validator/transformer · Joi · Swagger (`/api/docs` disabled in production) |
+| Web | React 18 + Vite 6 · TypeScript 5 · TanStack Query 5 · React Hook Form + Zod · Tailwind 3 · Recharts 2 · Sonner · Lucide |
+| Infra | Docker Compose (`postgres` + `backend` + `frontend`) · multi‑stage Dockerfiles (`development` + `production`); in prod the SPA is served with `nginx:alpine` and the API with `node dist/main.js` |
 
 ---
 
-## Architecture
+## 2. Repository layout
 
-The codebase is split in two deployable units (`backend/`, `frontend/`) plus shared docker scaffolding. Each backend module follows the same shape:
+```
+apply-hub/
+├── backend/
+│   ├── prisma/schema.prisma           # schema source of truth
+│   ├── scripts/                       # ops on primary and replica (mjs)
+│   │   ├── db-status.mjs              # parity between primary and replica
+│   │   ├── db-sync.mjs                # full snapshot via pg_dump|psql in container
+│   │   ├── db-sync-incremental.mjs    # paginated upsert by id, only if updatedAt > destination
+│   │   ├── ensure-text-selector-columns.mjs  # migrates legacy PG enums → VARCHAR (idempotent)
+│   │   ├── run-on-replica.mjs         # runs any command with DATABASE_URL=replica
+│   │   └── prisma-studio-local.mjs    # opens Studio resolving `postgres` → `localhost:5432`
+│   └── src/
+│       ├── main.ts                    # bootstrap (prefix `/api`, CORS, ValidationPipe, global filter, Swagger)
+│       ├── app.module.ts              # ConfigModule (Joi) + Prisma + 7 feature modules
+│       ├── common/
+│       │   ├── dto/pagination.dto.ts  # PaginationDto (page≥1, limit 1..200, default 25) + PaginatedResult<T>
+│       │   └── filters/http-exception.filter.ts
+│       ├── config/                    # typed configuration() + validation.schema (Joi)
+│       ├── prisma/                    # @Global PrismaService with write‑mirror middleware
+│       ├── database/seed.ts           # 12 templates (6 EN + 6 ES) idempotent
+│       └── modules/
+│           ├── applications/          # controller · service · dto · domain (StatusResolverService, enums)
+│           ├── application-events/    # append‑only timeline
+│           ├── contacts/              # reusable people (m:n with applications)
+│           ├── search-sessions/       # reproducible log of each search
+│           ├── templates/             # cover letters, messages, follow‑ups
+│           ├── dashboard/             # KPIs, funnel, heatmap, distributions, search activity
+│           └── platform-settings/     # single row (id="default") with vocabulary + theme
+├── frontend/
+│   ├── nginx.conf                     # SPA fallback `try_files $uri /index.html`
+│   ├── vite.config.ts                 # alias `@` → src; host 0.0.0.0, polling
+│   ├── tailwind.config.js             # HSL tokens via CSS vars (theming)
+│   └── src/
+│       ├── main.tsx, App.tsx          # router + QueryClient + PlatformSettingsProvider + Toaster
+│       ├── api/                       # 1 typed axios client per resource
+│       ├── components/                # ui primitives, applications, dashboard, layout, status
+│       ├── context/                   # PlatformSettingsProvider (theme + vocabulary in one source)
+│       ├── hooks/                     # 1 Query/Mutation hooks file per resource
+│       ├── lib/                       # api · query‑client · theme · format · chart‑palette · cn · form‑*
+│       ├── pages/                     # dashboard, applications/list, applications/detail, search‑sessions, templates, settings
+│       └── types/                     # enums, labels, models, platform‑settings DTOs
+├── docker-compose.yml
+├── .env.example
+└── README.md
+```
+
+---
+
+## 3. Architecture
+
+### 3.1 Canonical shape of a backend module
 
 ```
 modules/<feature>/
-├── <feature>.controller.ts   HTTP surface (validation only)
-├── <feature>.service.ts      use cases, persistence, transactions
-├── <feature>.module.ts       wiring + cross-module imports
-├── domain/                   enums, status resolvers, helpers (pure)
-└── dto/                      class-validator request/query DTOs
+├── <feature>.controller.ts   # HTTP surface — binding and validation only
+├── <feature>.service.ts      # use cases, persistence, transactions
+├── <feature>.module.ts       # wiring + cross imports
+├── domain/                   # enums, pure helpers, resolvers (no Nest deps when possible)
+└── dto/                      # class‑validator DTOs (request + query)
 ```
 
-Cross‑cutting concerns live at the top:
+Rules the codebase follows:
 
-- `src/main.ts` — bootstraps Nest with global `/api` prefix, CORS allowlist (`CORS_ORIGIN` accepts comma‑separated origins), `ValidationPipe` (`whitelist`, `forbidNonWhitelisted`, `transform`, implicit conversion) and a global `HttpExceptionFilter` that returns `{ statusCode, message, error, path, timestamp }` for every error and logs 5xx with stack.
-- `src/config/` — typed `AppConfig` loaded by `ConfigService` and validated against a Joi schema (`abortEarly`).
-- `src/common/` — shared `PaginationDto` (`page`, `limit` with `1..200` cap and a `PaginatedResult<T>` envelope) and the global exception filter.
-- `src/prisma/` — `PrismaService` extends `PrismaClient`, owns the optional **replica** middleware (see below) and connects on `OnModuleInit`. Module is `@Global()` so every feature module gets it without re‑importing.
+- Services read configuration **only** via `ConfigService`, never `process.env`.
+- Services use Prisma **only** via `PrismaService` (`PrismaClient` is not instantiated in modules).
+- Status transition logic (`defaultStageFor`, `isFirstResponseTransition`, `isClosingTransition`) lives in `applications/domain/status-resolver.service.ts` and is reused from the dashboard.
+- Vocabulary validation (custom slugs, order, hidden, labels) lives in `platform-settings/domain/form-config.helpers.ts` and applies both when saving `PlatformSettings` and when creating/updating `Application`/`SearchSession`.
 
-Feature modules read configuration only through services they depend on; they never touch `process.env` or instantiate Prisma directly. Status transitions, default stage resolution and "first response" detection live in `applications/domain/status-resolver.service.ts`, kept out of controllers and dashboard code.
+### 3.2 Cross‑cutting
 
-### Write‑mirror replica
+`src/main.ts` does exactly:
 
-`PrismaService` installs a Prisma middleware when `DATABASE_URL_REPLICA` is set:
+1. Creates Nest with `bufferLogs: true`.
+2. Applies `app.setGlobalPrefix('api')`.
+3. Enables CORS accepting `CORS_ORIGIN` as a comma‑separated list (`o.trim()`).
+4. Registers `ValidationPipe({ whitelist, forbidNonWhitelisted, transform, transformOptions: { enableImplicitConversion: true } })`.
+5. Registers global `HttpExceptionFilter` → uniform response `{ statusCode, message, error, path, timestamp }`. Logs with stack only when `status >= 500`.
+6. Mounts Swagger at `/api/docs` **except** in `production`.
+7. Calls `app.listen(port)`.
 
-1. Pre‑generates UUIDs for `create` / `createMany` so primary and replica end up with the same primary keys.
-2. After the primary write succeeds, snapshots the params (deep clone) and enqueues the same operation against the replica through a serial promise queue (preserves write order, avoids FK race conditions).
-3. Retries up to four times with backoff for FK errors (`P2003`) since replicated rows may temporarily race against parents.
-4. Failures on the replica are logged and discarded — the primary is the source of truth and `npm run db:status` / `db:sync:*` reconcile drift.
+`PaginationDto` is the base for all `Query` DTOs: `page` (≥1, default 1) and `limit` (1..200, default 25). The paginated response envelope is:
 
-Read paths never hit the replica.
+```ts
+type PaginatedResult<T> = {
+  data: T[];
+  meta: { total: number; page: number; limit: number; totalPages: number };
+};
+```
 
-### Frontend architecture
+### 3.3 PrismaService and write‑mirror replica
+
+`PrismaService` (in `@Global() PrismaModule`) extends `PrismaClient` and, **if `DATABASE_URL_REPLICA` is set**, installs a `$use(...)` middleware that:
+
+1. **Pre‑generates UUIDs** on `create` / `createMany` before delegating to the primary, so primary and replica end up with the same PK.
+2. After success on the primary, **enqueues** the same operation against the replica (operations in `{create, createMany, update, updateMany, upsert, delete, deleteMany}`).
+3. The queue is **serial** (`replicationQueue: Promise<void>` chained) to preserve write order and avoid FK races.
+4. Uses **`structuredClone(params.args)`** before enqueueing to avoid reading in‑flight mutations.
+5. **Retries up to 4 times with backoff `100/250/500ms`** when the error is `P2003` (FK violated) — typical when a child replicates before the parent.
+6. If the replica is down at startup, logs a warning and the app keeps running against the primary (graceful degradation). Reads **never** go to the replica.
+
+Off‑band reconciliation uses the `db:status`, `db:sync*`, and `db:sync:incremental*` scripts (see §7.2).
+
+### 3.4 Frontend
 
 ```
 frontend/src/
-├── main.tsx                  React root, query client + theme-aware Toaster
-├── App.tsx                   route table
-├── api/                      typed axios clients (one file per resource)
+├── main.tsx             React root + QueryClient + BrowserRouter + PlatformSettingsProvider + ThemeAwareToaster
+├── App.tsx              route table (all inside <AppShell />)
+├── api/                 typed axios client per resource (applications, dashboard, events, platform-settings, search-sessions, templates)
 ├── components/
-│   ├── applications/         feature components (form, filters, row, timeline, status changer)
-│   ├── dashboard/            chart primitives (heatmap, funnel, distribution, time series, KPI)
-│   ├── layout/               app shell, sidebar, page header
-│   ├── status/               status badge
-│   └── ui/                   primitives (button, card, modal, select, ...)
-├── context/                  PlatformSettingsProvider (single source for vocabulary + theme)
-├── hooks/                    TanStack Query hooks per resource
-├── lib/                      axios + interceptors, query client, theme helpers, formatters
-├── pages/                    routed views
-└── types/                    enums, labels, models, platform-settings DTOs
+│   ├── applications/    application-form, application-filters, application-row, status-changer, timeline
+│   ├── dashboard/       activity-heatmap, distribution-bars, funnel-chart, kpi-card, time-series-chart
+│   ├── layout/          app-shell, sidebar, page-header
+│   ├── status/          status-badge
+│   └── ui/              badge, button, card, empty-state, input, label, modal, select, spinner, textarea
+├── context/             PlatformSettingsProvider (single source for vocabulary + theme)
+├── hooks/               useDashboard, useApplications*, useEvents, useSearchSessions, useTemplates, useDebouncedValue
+├── lib/                 api (axios + toast interceptor), query-client, apply-theme, theme-presets, chart-palette, form-defaults, form-select-options, cn, format
+├── pages/               dashboard, applications/list, applications/detail, search-sessions, templates, settings
+└── types/               enums, labels, models, platform-settings
 ```
 
-- **Single React Query client** (`lib/query-client.ts`) with `staleTime: 30s`, no retry on mutations, no refetch‑on‑focus.
-- **Axios interceptor** (`lib/api.ts`) maps backend error envelopes to a typed `ApiError` and emits a `sonner` toast with a contextual title (Connection / Server / Invalid request / Forbidden / Not found).
-- **Theming** is owned by `PlatformSettingsProvider`. The HTML `<html>` class composes `{appearance} theme-preset-{id}` (e.g. `dim theme-preset-emerald`); CSS variables in `index.css` define every appearance × preset combination. The toaster reads `appearanceMode` and switches its sonner theme accordingly.
-- **Forms**: `react-hook-form` + `zodResolver`. The application form binds vocabulary‑driven selectors (method, position, employment, role title, resume version, search platform) to options coming from `usePlatformSettings()`, so renaming or adding an entry in Settings instantly propagates to forms, filters and detail views.
+Key frontend decisions:
+
+- **Single `QueryClient`** (`lib/query-client.ts`): `staleTime: 30_000`, `refetchOnWindowFocus: false`, `retry: 1` on queries, `retry: 0` on mutations.
+- **Axios interceptor** (`lib/api.ts`): maps the backend error envelope to a typed `ApiError` and shows a `sonner` toast with a contextual title (`Connection error` / `Server error` / `Invalid request` / `Forbidden` / `Not found` / `Request failed`). When `message` is a string[] it joins with ` • `.
+- **Context‑driven theming**. `<html>` carries two classes: `{appearanceMode} theme-preset-{themeId}` (e.g. `dim theme-preset-emerald`). `applyDocumentTheme` clears old ones and persists choice in `localStorage` (`applyhub-theme`, `applyhub-appearance`).
+- **Recharts theme‑aware**: `lib/chart-palette.ts` exposes `chartColor(1..5)` resolving to `hsl(var(--chart-N))`. Each preset redefines those 5 stops + `--chart-foreground` for correct contrast.
+- **Vocabulary‑aware selectors**: `PlatformSettingsProvider` materializes `methodSelectOptions`, `positionSelectOptions`, `employmentSelectOptions`, `searchPlatformSelectOptions`, `workModeSelectOptions`, `roleTitleOptions`, `resumeVersionOptions`. Rename/add/hide/reorder in Settings propagates **immediately** to forms, filters, and detail views.
+- **Forms**: React Hook Form + Zod (`zodResolver`). The `'Unspecified'` sentinel on optional selects maps to `null` before submit so strict backend validators (URLs, emails) are not broken.
 
 ---
 
-## Domain model
+## 4. Domain model
 
-Defined in `backend/prisma/schema.prisma`. Six aggregates, each with explicit indexes and `@@map`s.
+Defined in `backend/prisma/schema.prisma`. **6 aggregates** (+ implicit pivot), all with `@@map` snake_case and explicit indexes.
 
-| Aggregate            | Purpose | Notable fields |
-| -------------------- | ------- | -------------- |
-| `JobApplication`     | One opportunity. Owns status, stage, priority, salary band, denormalized vacancy contact, optional link to a search session. | `position`, `applicationMethod`, `employmentType`, `platform` are **strings** (built‑in IDs + custom slugs from settings); `postingLanguage` enum (`en` / `es`); `resumeVersion`; `firstResponseAt`, `lastActivityAt`, `closedAt`, `archivedAt` derived by the service layer. |
-| `JobSearchSession`   | A logged search (platform, query, filters, posted‑from window). Aggregates the applications produced from it. | `platform` (string + custom slugs), `platformOther`, `queryTitle`, `filterDescription`, `jobPostedFrom`, `searchedAt`, `resultsApproxCount`, `isComplete`, `searchUrl`. |
-| `ApplicationEvent`   | Append‑only audit of every status/stage change, message, interview, note. Drives the timeline view. | `type`, `newStatus`, `newStage`, `channel`, `occurredAt`, JSON `metadata` (carries `previousStatus`/`previousStage` for transitions). |
-| `Contact`            | Reusable people (recruiters, hiring managers, referrals) attachable to many applications via the implicit `_ApplicationContacts` pivot. | `role`, optional email/phone/LinkedIn, `companyName`. |
-| `Template`           | Reusable copy (cover letters, follow‑ups, outreach) with usage stats and favorites. | `type`, `language`, `tags`, `usageCount`, `isFavorite`, `lastUsedAt`. |
-| `PlatformSettings`   | Single‑row configuration: appearance, color preset, custom selector vocabularies. | `themeId`, `appearanceMode` (`dark`/`dim`/`light`), `formConfig` JSON (see below). |
+| Aggregate | Role | Relevant fields |
+| --------- | ---- | ---------------- |
+| `JobApplication` | One opportunity. Owns status, stage, priority, salary band, denormalized vacancy contact, optional FK to search session. | `position` / `applicationMethod` / `employmentType` / `platform` are **strings** (built‑in IDs **+** custom slugs from Settings). `workMode` is a **strict enum** (`remote` / `hybrid` / `onsite` / `unknown`). `postingLanguage` enum (`en`/`es`). Service‑derived timestamps: `firstResponseAt`, `lastActivityAt`, `closedAt`, `archivedAt`. |
+| `JobSearchSession` | Logged search (platform, query, filters, posting window). Aggregates `JobApplication` rows it produced. | `platform` (string), `platformOther` (only when `platform === 'other'`), `queryTitle`, `filterDescription`, `jobPostedFrom` (date), `searchedAt`, `resultsApproxCount`, `isComplete`, `searchUrl`, `notes`. |
+| `ApplicationEvent` | Append‑only timeline. One row per status/stage change, message, interview, note, etc. | `type` (enum), `newStatus`, `newStage`, `channel`, `occurredAt`, `metadata` (JSONB with `previousStatus`/`previousStage` on transitions). |
+| `Contact` | Reusable people (recruiters, hiring managers, referrals). | `name`, `role`, `companyName`, `email`, `phone`, `linkedinUrl`, `notes`. m:n with `JobApplication` via implicit pivot `_ApplicationContacts`. |
+| `Template` | Reusable copy (cover letter, email, messages, follow‑up, …). | `type`, `language`, `tags`, `usageCount`, `isFavorite`, `lastUsedAt`. |
+| `PlatformSettings` | Single row (`id="default"`) with UI prefs + vocabulary. | `themeId` (12 values, see §6), `appearanceMode` (6 values), `formConfig` JSONB (end‑to‑end validated, see §4.4). |
 
-### Status pipeline
+**Relevant cascades**:
+
+- `ApplicationEvent.application` → `onDelete: Cascade` (deleting an application deletes its timeline).
+- `JobApplication.jobSearchSession` → `onDelete: SetNull` (deleting a session leaves applications with `jobSearchSessionId = null`).
+
+### 4.1 Status pipeline
 
 ```
 applied → acknowledged → screening → assessment → interview → offer → negotiating → accepted
-                                                         ↘
-                                               rejected | withdrawn | ghosted | on_hold
+                                                       ↘
+                                       rejected | withdrawn | ghosted | on_hold
 ```
 
-`StatusResolverService`:
+Defined in `application.enums.ts`:
 
-- **`defaultStageFor(status)`** — picks the canonical stage when the client doesn't specify one (e.g. `screening → recruiter_screen`, `interview → tech_interview_1`).
-- **`isFirstResponseTransition(from, to)`** — `true` when leaving `applied` to anything other than `applied`/`ghosted`. The first such transition stamps `firstResponseAt`.
-- **`isClosingTransition(to)`** — `true` for `accepted` / `rejected` / `withdrawn` / `ghosted`. Stamps `closedAt`. Re‑opening to a non‑terminal status clears it.
-- `ACTIVE_STATUSES`, `TERMINAL_STATUSES` and `FUNNEL_ORDER` are exported from `application.enums.ts` and consumed by both the applications service and the dashboard.
+- `ACTIVE_STATUSES` = `{applied, acknowledged, screening, assessment, interview, offer, negotiating, on_hold}`.
+- `TERMINAL_STATUSES` = `{accepted, rejected, withdrawn, ghosted}`.
+- `FUNNEL_ORDER` = `[applied, acknowledged, screening, assessment, interview, offer, negotiating, accepted]` — used for conversion and "responded ≥ screening".
 
-### Auto‑ghost
+### 4.2 `StatusResolverService`
 
-`POST /applications/mark-stale-ghosted` walks `applied` / `acknowledged` rows whose `lastActivityAt` (or `applicationDate` fallback) is older than `daysWithoutActivity` (default 21, override with `?days=`) and replays `changeStatus` on each, so the timeline event is emitted normally.
+| Method | Behavior |
+| ------ | -------- |
+| `defaultStageFor(status)` | Maps status → canonical stage when the client omits stage. `applied→submitted`, `acknowledged→auto_reply`, `screening→recruiter_screen`, `assessment→take_home`, `interview→tech_interview_1`, `offer→offer_received`, `negotiating→offer_negotiation`, `accepted→offer_accepted`, `rejected/withdrawn/ghosted/on_hold→closed`. |
+| `isFirstResponseTransition(from, to)` | `true` only if `from === 'applied'` and `to !== 'applied'` and `to !== 'ghosted'`. When `true` and `firstResponseAt` is empty, `changeStatus` sets it. |
+| `isClosingTransition(to)` | `true` for `accepted/rejected/withdrawn/ghosted`. When `true`, `closedAt = occurredAt`. **If you reopen** to a non‑terminal status, `closedAt` is cleared. |
 
-### Configurable vocabularies
+`firstResponseAt` is also filled when `ApplicationEventsService.create` receives an event of types: `MESSAGE_RECEIVED`, `EMAIL_RECEIVED`, `INTERVIEW_SCHEDULED`, `ASSESSMENT_ASSIGNED`, `FEEDBACK_RECEIVED`, `OFFER_RECEIVED` (and only if still null). Any event bumps `lastActivityAt`.
 
-`PlatformSettings.formConfig` is a JSON document validated by `assertValidFormConfig`:
+### 4.3 Auto‑ghost
 
-- **Custom slug sets** for `applicationMethod`, `position`, `employmentType` and `searchPlatform` (`/^[a-z][a-z0-9_]{0,47}$/`, no collision with built‑in IDs, no duplicates).
-- **Order arrays** are required to be a full permutation of the universe (`builtin ∪ custom`); mismatched length, unknown entries or duplicates are rejected.
-- **Hidden arrays** must be subsets; **labels** keys must belong to the universe.
-- **Free lists**: `roleTitleOptions` (≤80) and `resumeVersionOptions` (≤40).
-- `workModeLabels` keys are validated against the `WorkMode` enum (no custom slugs there — work mode stays a strict enum).
+`POST /applications/mark-stale-ghosted?days=N` (default `21`):
 
-`ApplicationsService.assertApplicationSelectors` and `SearchSessionsService.assertSearchPlatform` re‑validate every write against the live `formConfig`, so removing a custom slug doesn't allow new rows to use it (existing rows keep the value).
+1. Loads all applications with `status ∈ {applied, acknowledged}`.
+2. For each, compares `lastActivityAt ?? applicationDate` to `now - N days`.
+3. If older, replays `changeStatus(id, { status: ghosted, stage: closed })` — so a normal `ghosted_marked` event is emitted on the timeline and all transactional logic is respected.
+4. Returns `{ ghostedCount }`.
+
+### 4.4 Configurable vocabularies (`PlatformSettings.formConfig`)
+
+`assertValidFormConfig` in `PlatformSettingsService` validates every `PATCH /platform-settings`:
+
+- **Custom slugs** (`customApplicationMethods`, `customPositionTypes`, `customEmploymentTypes`, `customSearchPlatforms`):
+  - regex `/^[a-z][a-z0-9_]{0,47}$/` (≤ 48 chars).
+  - must not collide with built‑ins (Prisma enums).
+  - no duplicates within the array.
+- **Orders** (`*Order`): if present, must be a **full permutation** of the universe `built‑in ∪ custom` (same length, no duplicates, no unknowns).
+- **Hidden** (`*Hidden`): subset of the universe.
+- **Labels** (`*Labels`): keys within the universe.
+- `workModeLabels`: keys within the `WorkMode` enum (no custom slugs — work mode is intentionally a strict enum).
+- `roleTitleOptions`: ≤ 80 entries.
+- `resumeVersionOptions`: ≤ 40 entries.
+
+Also, **every write to `JobApplication`/`JobSearchSession` re‑validates** selectors against the current `formConfig`:
+
+- `ApplicationsService.assertApplicationSelectors` checks `applicationMethod`, `position`, `employmentType`.
+- `SearchSessionsService.assertSearchPlatform` checks `platform`.
+
+→ If you remove a custom slug from Settings, **existing rows keep it** but you **cannot create new** rows with that value.
 
 ---
 
-## HTTP API
+## 5. HTTP API
 
-Global prefix: **`/api`**. OpenAPI / Swagger is mounted at `/api/docs` outside production. All list endpoints inherit `PaginationDto` (`page`, `limit`).
+Global prefix: **`/api`**. Swagger at `/api/docs` (not in production). All list endpoints extend `PaginationDto`. Errors follow the global envelope; `404` is mapped from `Prisma P2025`.
 
-### Applications — `ApplicationsController`
-
-| Method | Path | Description |
-| ------ | ---- | ----------- |
-| `POST` | `/applications` | Create. Validates selectors against `PlatformSettings`, defaults dates to today, defaults `stage` from `StatusResolverService`. Always emits an `application_submitted` event in the same transaction. |
-| `GET` | `/applications` | Paginated list. Filters: `search` (role/company/notes/location, ILIKE), `status[]`, `stage[]`, `position[]`, `method[]`, `workMode[]`, `priority[]`, `companyName`, `fromDate`, `toDate`, `tags[]`, `onlyActive`, `includeArchived`. Sort: `applicationDate`/`createdAt`/`updatedAt`/`status`/`priority`/`lastActivityAt`, `asc`/`desc`. |
-| `GET` | `/applications/:id` | Single application with `contacts` and a slim `jobSearchSession` projection. |
-| `PATCH` | `/applications/:id` | Partial update (no status/stage; uses dedicated endpoint). Re‑validates selector slugs and search‑session FK. |
-| `PATCH` | `/applications/:id/status` | Status / stage change inside a transaction; updates `lastActivityAt`, conditionally sets `firstResponseAt` and `closedAt`, and writes one `ApplicationEvent` with `previousStatus`/`previousStage` in metadata. |
-| `PATCH` | `/applications/:id/contacts` | Replace the linked contacts (set‑semantics on `_ApplicationContacts`). |
-| `PATCH` | `/applications/:id/archive` / `/restore` | Soft‑archive via `archivedAt`. List view excludes archived unless `includeArchived=true`. |
-| `POST` | `/applications/mark-stale-ghosted?days=N` | Bulk auto‑ghost (replays per‑row `changeStatus`). Returns `{ ghostedCount }`. |
-| `DELETE` | `/applications/:id` | Hard delete. 404 mapped from Prisma `P2025`. |
-
-### Application events — `ApplicationEventsController`
+### 5.1 Applications — `/api/applications`
 
 | Method | Path | Description |
 | ------ | ---- | ----------- |
-| `POST` | `/events` | Create event. Bumps `lastActivityAt` and, when `type` implies an inbound response (`MESSAGE_RECEIVED`, `EMAIL_RECEIVED`, `INTERVIEW_SCHEDULED`, `ASSESSMENT_ASSIGNED`, `FEEDBACK_RECEIVED`, `OFFER_RECEIVED`), stamps `firstResponseAt` if missing. |
-| `GET` | `/applications/:applicationId/events` | Timeline for one application, ordered by `occurredAt desc`. |
+| `POST` | `/applications` | Create. Validates selectors against `formConfig`. Defaults: `applicationDate=today`, `vacancyPostedDate=applicationDate ?? today`, `stage=defaultStageFor(status)`, `lastActivityAt=now`. **In the same transaction** creates an `ApplicationEvent` `application_submitted` with `metadata: { applicationMethod, source, platform }`. |
+| `GET` | `/applications` | Paginated list. Filters: `search` (ILIKE on role/company/notes/location), `status[]`, `stage[]`, `position[]`, `method[]`, `workMode[]`, `priority[]`, `companyName` (ILIKE), `tags[]` (`hasSome`), `fromDate`/`toDate`, `onlyActive`, `includeArchived`. Sort: `applicationDate`/`createdAt`/`updatedAt`/`status`/`priority`/`lastActivityAt`, `asc`/`desc` (default `applicationDate desc`). Without `includeArchived=true`, archived rows are hidden. |
+| `GET` | `/applications/:id` | Detail with `contacts` and slim projection of `jobSearchSession`. |
+| `PATCH` | `/applications/:id` | Partial update. Does **not** accept `status`/`stage` (use dedicated endpoint). Re‑validates selectors and session FK. |
+| `PATCH` | `/applications/:id/status` | **Transactional** status/stage change: updates `lastActivityAt`, conditionally `firstResponseAt`/`closedAt`, and emits **one** `ApplicationEvent` with `metadata.previousStatus`/`previousStage`. Event `type` is derived from the new status (`offer→offer_received`, `accepted→offer_accepted`, `negotiating→offer_negotiated`, `rejected→rejected`, `withdrawn→withdrawn`, `ghosted→ghosted_marked`, else → `status_changed`). |
+| `PATCH` | `/applications/:id/contacts` | Replaces the linked contact set (`set` semantics). |
+| `PATCH` | `/applications/:id/archive` / `/restore` | Soft archive (`archivedAt`). |
+| `POST` | `/applications/mark-stale-ghosted?days=N` | Bulk auto‑ghost (default 21). Returns `{ ghostedCount }`. |
+| `DELETE` | `/applications/:id` | Hard delete. Events cascade. |
+
+### 5.2 Application events
+
+| Method | Path | Description |
+| ------ | ---- | ----------- |
+| `POST` | `/events` | Create event. Bumps `lastActivityAt` and, if `type` implies an inbound response (see §4.2) and `firstResponseAt` is empty, sets it. All in one transaction. |
+| `GET` | `/applications/:applicationId/events` | Timeline (order `occurredAt desc`). |
 | `GET` | `/events/:id` / `DELETE` `/events/:id` | Standard fetch / delete. |
 
-### Search sessions — `SearchSessionsController`
+### 5.3 Search sessions — `/api/search-sessions`
 
 | Method | Path | Description |
 | ------ | ---- | ----------- |
-| `POST` `/search-sessions` | Create. `platform` validated against `formConfig`; `platformOther` only kept when `platform === 'other'`. `jobPostedFrom` defaults to the calendar day of `searchedAt`. |
-| `GET` `/search-sessions` | Paginated. Filters: `search` (query/filters/notes/platformOther), `platform`, `fromDate`, `toDate`. |
-| `GET` `/search-sessions/:id` | Single session including `_count.applications`. |
-| `PATCH` / `DELETE` `/search-sessions/:id` | Partial update / delete. Deleting unlinks applications via `onDelete: SetNull`. |
+| `POST` | `/search-sessions` | Create. Validates `platform` against `formConfig`. `platformOther` only persists when `platform === 'other'`. `searchedAt` defaults to `now`; `jobPostedFrom` default = calendar day of `searchedAt`. |
+| `GET` | `/search-sessions` | Paginated. Filters: `search` (ILIKE on queryTitle/filterDescription/notes/platformOther), `platform`, `fromDate`/`toDate`. Order `searchedAt desc`. |
+| `GET` | `/search-sessions/:id` | Detail with `_count.applications`. |
+| `PATCH` | `/search-sessions/:id` | Partial update. If you change `platform` to something other than `other`, clears `platformOther`. |
+| `DELETE` | `/search-sessions/:id` | Delete. Applications keep `jobSearchSessionId = null`. |
 
-### Contacts — `ContactsController`
-
-| Method | Path | Description |
-| ------ | ---- | ----------- |
-| `POST` `/contacts` | Create. |
-| `GET` `/contacts` | Paginated. Filters: `search` (name/email/title/company), `role`, `companyName`. Ordered by `name asc`. |
-| `GET` / `PATCH` / `DELETE` `/contacts/:id` | Standard CRUD. |
-
-### Templates — `TemplatesController`
+### 5.4 Contacts — `/api/contacts`
 
 | Method | Path | Description |
 | ------ | ---- | ----------- |
-| `POST` `/templates` | Create. |
-| `GET` `/templates` | Paginated. Filters: `search` (name/subject/body), `type`, `favoritesOnly`, `language`. Ordered by `isFavorite desc, usageCount desc, updatedAt desc`. |
-| `GET` / `PATCH` / `DELETE` `/templates/:id` | Standard CRUD. |
-| `PATCH` `/templates/:id/favorite` | Toggle `isFavorite`. |
-| `PATCH` `/templates/:id/used` | Increment `usageCount` and refresh `lastUsedAt` (called by the SPA on copy). |
+| `POST` | `/contacts` | Create (trim `companyName`). |
+| `GET` | `/contacts` | Paginated. Filters: `search` (ILIKE on name/email/title/companyName), `role`, `companyName`. Order `name asc`. |
+| `GET` / `PATCH` / `DELETE` | `/contacts/:id` | Standard CRUD. |
 
-### Dashboard — `DashboardController`
+### 5.5 Templates — `/api/templates`
 
 | Method | Path | Description |
 | ------ | ---- | ----------- |
-| `GET` `/dashboard` | Pipeline overview. |
-| `GET` `/dashboard/search-activity` | Search‑sessions overview. |
+| `POST` | `/templates` | Create. |
+| `GET` | `/templates` | Paginated. Filters: `search` (ILIKE on name/subject/body), `type`, `favoritesOnly`, `language`. Order: `isFavorite desc, usageCount desc, updatedAt desc`. |
+| `GET` / `PATCH` / `DELETE` | `/templates/:id` | Standard CRUD. |
+| `PATCH` | `/templates/:id/favorite` | Toggle. |
+| `PATCH` | `/templates/:id/used` | Increment `usageCount` and refresh `lastUsedAt` (SPA calls this on copy). |
 
-Both accept `fromDate` / `toDate`. The pipeline overview returns:
+### 5.6 Dashboard — `/api/dashboard`
 
-- `kpis` — `total`, `active`, `responded`, `interviewing`, `offers`, `accepted`, `rejected`, `ghosted`, `responseRate`, `interviewRate`, `offerRate`, `acceptanceRate`, `avgDaysToFirstResponse`, `avgDaysToOffer`. "Responded" is computed via `firstResponseAt` **or** funnel index `≥ screening`, so manual status moves still count.
-- `byStatus`, `byPosition`, `byMethod`, `byWorkMode` — `{ key, count, percentage }[]` sorted by count.
-- `funnel` — array following `FUNNEL_ORDER` with `count`, `conversionFromPrev` and `conversionFromTop` (rounded to one decimal).
-- `applicationsPerDay` — daily time series of `applicationDate`.
-- `activityHeatmap` — raw SQL (`$queryRaw`) against `application_events` grouped by `(EXTRACT(DOW), EXTRACT(HOUR))` so it covers every recorded movement, not just submissions. Honors the date window.
-- `methodEffectiveness` — per‑method `total`, `responseRate`, `interviewRate`, `offerRate`, sorted by volume.
-- `topCompanies` — top 10 by application count, with `activeCount`.
-- `upcomingFollowUps` — active applications whose `lastActivityAt` (or `applicationDate`) is more than 7 days old.
+Both endpoints accept `fromDate`/`toDate` (YYYY‑MM‑DD).
 
-Search activity returns `totalSessions`, `linkedApplicationsCount`, `byPlatform`, `byCompletion` (`active` / `complete`), `searchesPerDay`, `topQueries` (top 15) and `recentSessions` (latest 20 with `applicationsCount`).
+| Method | Path | Output |
+| ------ | ---- | ------ |
+| `GET` | `/dashboard` | Pipeline overview (detail below). Excludes archived. |
+| `GET` | `/dashboard/search-activity` | Metrics over `JobSearchSession`. |
 
-### Platform settings — `PlatformSettingsController`
+**`GET /dashboard`** returns:
+
+- `kpis`: `total`, `active`, `responded`, `interviewing`, `offers`, `accepted`, `rejected`, `ghosted`, `responseRate`, `interviewRate`, `offerRate`, `acceptanceRate`, `avgDaysToFirstResponse`, `avgDaysToOffer`. An application counts as **responded** if it has `firstResponseAt` **or** `funnelIndex(status) ≥ funnelIndex(screening)` — so manual reclassifications without an event still count.
+- `byStatus` / `byPosition` / `byMethod` / `byWorkMode`: `{ key, count, percentage }[]` (sorted desc by count).
+- `funnel`: array following `FUNNEL_ORDER` with `count`, `conversionFromPrev`, `conversionFromTop` (1 decimal).
+- `applicationsPerDay`: time series on `applicationDate`.
+- `activityHeatmap`: `$queryRaw` on `application_events` grouped by `(EXTRACT(DOW), EXTRACT(HOUR))` — covers **all** logged activity, not just submissions. Honors the range.
+- `methodEffectiveness`: per method → `total`, `responseRate`, `interviewRate`, `offerRate`, sorted desc by volume.
+- `topCompanies`: top 10 by `applicationsCount` (key normalized `trim().toLowerCase()`), with `activeCount`.
+- `upcomingFollowUps`: count of active applications with `lastActivityAt ?? applicationDate` > 7 days.
+
+**`GET /dashboard/search-activity`** returns `totalSessions`, `linkedApplicationsCount` (sum of `_count.applications`), `byPlatform`, `byCompletion` (`active` / `complete`), `searchesPerDay`, `topQueries` (top 15), `recentSessions` (latest 20 with `applicationsCount`, `filterDescription`, `jobPostedFrom`, `resultsApproxCount`).
+
+### 5.7 Platform settings — `/api/platform-settings`
 
 | Method | Path | Description |
 | ------ | ---- | ----------- |
-| `GET` `/platform-settings` | Returns the single `default` row, creating it on first call (`themeId: ocean`, `appearanceMode: dark`, empty `formConfig`). |
-| `PATCH` `/platform-settings` | Updates `themeId` (`ocean` / `violet` / `emerald` / `rose` / `amber` / `slate`), `appearanceMode` (`dark` / `dim` / `light`) and/or `formConfig` (validated end‑to‑end). |
+| `GET` | `/platform-settings` | Returns the `default` row, **creating it** on first call (`themeId: ocean`, `appearanceMode: dark`, `formConfig: {}`). |
+| `PATCH` | `/platform-settings` | Partial update. `themeId` ∈ {ocean, sky, indigo, violet, fuchsia, rose, coral, terracotta, amber, lime, emerald, slate}. `appearanceMode` ∈ {dark, night, dim, mist, soft, light}. `formConfig` validated end‑to‑end (§4.4). |
 
 ---
 
-## Frontend pages
+## 6. Frontend
 
-| Route | File | Notes |
-| ----- | ---- | ----- |
-| `/` | `pages/dashboard.tsx` | Tabbed view: **Pipeline** (KPIs, time series, funnel, distributions, activity heatmap, method effectiveness, top companies, "mark stale as ghosted" quick action) and **Search activity** (KPIs, sessions per day, by platform / completion, top queries, recent sessions). Date range applies to both panels. |
-| `/applications` | `pages/applications/list.tsx` | Filters bar (debounced search), pagination, modal create. |
-| `/applications/:id` | `pages/applications/detail.tsx` | Header with status badge + actions (edit, archive/restore, delete), `StatusChanger`, `Timeline`, side panel with details (position, priority, employment, salary, search session, resume, posting language, derived dates). |
-| `/search-sessions` | `pages/search-sessions.tsx` | Logged searches with filters, create/edit modal. Custom platform field appears only when `platform === 'other'`. |
-| `/templates` | `pages/templates.tsx` | Tabs by language (All / English / Spanish), filters by type and favorites. Card actions: copy (auto‑increments `usageCount`), edit, favorite toggle, delete. |
-| `/settings` | `pages/settings.tsx` | Appearance + color preset; full editors for application methods, position types, employment types, search platforms (reorder / rename / hide / add custom slug / remove custom); free lists for role titles and resume versions; work mode label overrides. |
+### 6.1 Routes
+
+| Route | File | What it does |
+| ----- | ---- | -------------- |
+| `/` | `pages/dashboard.tsx` | **Pipeline** tab (KPIs, time series, funnel, distributions, heatmap, method effectiveness, top companies, quick action `mark stale as ghosted`) and **Search activity** tab (KPIs, sessions/day, by platform, by completion, top queries, recent sessions). Date range applies to both panels (independent on the backend). |
+| `/applications` | `pages/applications/list.tsx` | Filters (`search` with 300ms debounce), pagination, create modal. |
+| `/applications/:id` | `pages/applications/detail.tsx` | Header with `StatusBadge` + actions (edit, archive/restore, delete with confirm), `StatusChanger`, `Timeline`, side panel with details + search session + vacancy contact. |
+| `/search-sessions` | `pages/search-sessions.tsx` | Logged sessions with filters and create/edit modal. `platformOther` only when `platform === 'other'`. |
+| `/templates` | `pages/templates.tsx` | Tabs by language (All / English / Spanish), filters by type and favorites. Card actions: copy (auto‑increment `usageCount`), edit, favorite toggle, delete. |
+| `/settings` | `pages/settings.tsx` | Appearance + color preset (live apply); full editors for application methods / position types / employment types / search platforms (reorder · rename · hide · add custom slug · remove custom); free lists `roleTitleOptions` and `resumeVersionOptions`; overrides for `workModeLabels`. |
+
+`AppShell` wraps all routes with `<Sidebar />` + `<main>` (max width 1400px). The sidebar is static with 5 NavLinks (Dashboard / Applications / Search sessions / Templates / Settings) plus version `v1.0.0`.
+
+### 6.2 Theming
+
+- 12 color presets × 6 appearance modes → 72 combinations, each with its own HSL CSS variables in `index.css` (including `--chart-1..5` and `--chart-foreground` per preset).
+- `applyDocumentTheme(themeId, appearance)` clears and applies the two classes on `<html>`, persisting in `localStorage` (`applyhub-theme`, `applyhub-appearance`).
+- `getAppliedThemeSnapshot()` rebuilds the snapshot from `<html>.classList`, with fallback to `localStorage` and finally `(ocean, dark)`.
+- `ThemeAwareToaster` (in `main.tsx`) uses theme `'light'` only when appearance ∈ `{soft, light}`; otherwise `'dark'`.
+
+### 6.3 Unified vocabulary
+
+`usePlatformSettings()` exposes:
+
+- `effective*Labels` maps (built‑in merged with `formConfig` overrides).
+- Ordered lists `*SelectOptions` (order + hidden applied, custom slugs included).
+- Free lists `roleTitleOptions` / `resumeVersionOptions` (with defaults from `lib/form-defaults.ts` when settings omit them).
+- `updateSettings(input)` (mutation) + `isUpdating`.
+
+Rename/add/hide/reorder in Settings reflects immediately in forms, filters, badges, and dashboard without reload.
 
 ---
 
-## Quick start
+## 7. Operations
+
+### 7.1 Quick start (Docker)
 
 ```bash
 cp .env.example .env
 docker compose up --build
 ```
 
-The backend container generates the Prisma client, runs `prisma db push` (creates tables + enums) and starts Nest in watch mode. Default endpoints:
+The backend container with `target: development` runs in order:
+
+```
+prisma generate
+node scripts/ensure-text-selector-columns.mjs   # idempotent: converts legacy PG enums to VARCHAR without data loss
+prisma db push                                  # creates tables + enums (dev only — prod uses migrate deploy)
+nest start --watch
+```
+
+Default endpoints:
 
 - Web — `http://localhost:5173`
 - API — `http://localhost:3001/api`
 - Swagger — `http://localhost:3001/api/docs`
 - Postgres — `localhost:5432`
 
-### Local development without Docker
+### 7.2 Local without Docker
 
 ```bash
 # Backend
 cd backend
-npm install
-npx prisma generate
-npx prisma db push
+npm install                                # postinstall runs `prisma generate`
+npx prisma db push                         # or npm run prisma:db:push (includes ensure-text-selector-columns)
 npm run start:dev
 
 # Frontend
-cd frontend
+cd ../frontend
 npm install
 npm run dev
 ```
 
-### Configuration
+### 7.3 Configuration
+
+Validated with Joi at boot (see `backend/src/config/validation.schema.ts`):
 
 | Variable | Default | Purpose |
 | -------- | ------- | ------- |
-| `NODE_ENV` | `development` | `development` enables Swagger; `production` runs `prisma migrate deploy` and `node dist/main.js`. |
-| `PORT` / `BACKEND_PORT` | `3001` | API port (Nest reads `PORT`; compose maps `BACKEND_PORT`). |
-| `CORS_ORIGIN` | `http://localhost:5173` | Comma‑separated allowlist. |
-| `DATABASE_URL` | docker default | Primary Postgres (required). |
-| `DATABASE_URL_REPLICA` | empty | Optional secondary; when set, write‑mirror is enabled. |
-| `DATABASE_LOGGING` | `false` | Enables Prisma `query`/`info`/`warn`/`error` logs. |
-| `FRONTEND_PORT` | `5173` | Vite dev port. |
+| `NODE_ENV` | `development` | `production` disables Swagger; in prod the image runs `prisma migrate deploy && node dist/main.js`. |
+| `PORT` / `BACKEND_PORT` | `3001` | Nest reads `PORT`; compose maps `BACKEND_PORT`. |
+| `CORS_ORIGIN` | `http://localhost:5173` | Comma‑separated list. |
+| `DATABASE_URL` | docker default | Postgres primary (required). |
+| `DATABASE_URL_REPLICA` | `''` | If set, enables write‑mirror. |
+| `DATABASE_LOGGING` | `false` | When `true`, logs Prisma `query/info/warn/error`; otherwise only `error`. |
+| `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` / `POSTGRES_PORT` | `applyhub` / `applyhub_dev` / `applyhub` / `5432` | Compose container credentials. |
+| `FRONTEND_PORT` | `5173` | Vite. |
 | `VITE_API_URL` | `http://localhost:3001/api` | Base URL the SPA calls. |
 
-### Backend scripts (`cd backend`)
+### 7.4 Backend scripts (`cd backend`)
 
-- `npm run start:dev` — Nest in watch mode.
-- `npm run build` / `npm run start:prod` — production build and run.
-- `npm run prisma:generate` — regenerate the typed client.
-- `npm run prisma:db:push` — apply schema without a migration (dev).
-- `npm run prisma:migrate:dev` / `prisma:migrate:deploy` — versioned migrations.
-- `npm run prisma:studio` — Prisma Studio against the primary.
-- `npm run seed` — seed default templates (12 entries, 6 EN / 6 ES). Idempotent: skipped when the table is non‑empty.
-- `npm run db:status` — emits a JSON report comparing row counts and `MAX(updatedAt)` per model between primary and replica.
-- `npm run db:sync:incremental:local-to-replica` / `replica-to-local` — cursor‑paginated upsert by `id`, only when source `updatedAt` is newer; also reconciles the implicit pivot `_ApplicationContacts`.
-- `npm run db:sync:local-to-replica` / `replica-to-local` — full snapshot via `pg_dump | psql` inside a one‑off `postgres:18-alpine` container (no host Postgres tooling required).
-- `npm run prisma:db:push:replica` / `prisma:studio:replica` / `seed:replica` — replica‑targeted variants.
+Development:
+
+- `npm run start:dev` — Nest watch.
+- `npm run build` / `npm run start:prod` — build to `dist/` and `node dist/main.js`.
+- `npm run lint` / `npm run format`.
+
+Prisma:
+
+- `npm run prisma:generate` — regenerate client.
+- `npm run prisma:db:push` — `ensure-text-selector-columns` + `prisma db push` (dev, no versioned migration).
+- `npm run prisma:migrate:dev` / `prisma:migrate:deploy` — versioned migrations (deploy is the production path).
+- `npm run prisma:studio` — Prisma Studio. `prisma-studio-local.mjs` rewrites host `postgres → 127.0.0.1` when running on the host (not in the container).
+- `npm run seed` — seeds the 12 EN/ES templates from `seed.ts`. Idempotent: if `templates` is not empty, **skip**.
+
+Replica (they target `DATABASE_URL_REPLICA` via `run-on-replica.mjs`):
+
+- `npm run prisma:db:push:replica`, `prisma:studio:replica`, `seed:replica`.
+
+Ops on primary ↔ replica:
+
+- `npm run db:status` — JSON with `counts` per model (including pivot `_ApplicationContacts`) and `MAX(updatedAt)` per model on both sides, plus `sameCounts` boolean.
+- `npm run db:sync:incremental:local-to-replica` / `replica-to-local` — paginated by `id ASC` (batch 200), upsert only if `source.updatedAt > target.updatedAt`. Also syncs `_ApplicationContacts` with raw SQL (`INSERT ... ON CONFLICT DO NOTHING`).
+- `npm run db:sync:local-to-replica` / `replica-to-local` — full snapshot via `pg_dump --no-owner --no-acl --clean --if-exists | psql --set=ON_ERROR_STOP=1` inside a one‑off `postgres:18-alpine` (no `pg_dump` needed on the host). Assumes network `apply-hub_default` (override with `DOCKER_NETWORK`).
 
 ---
 
-## Replica — operational guide
+## 8. Replica — operational guide
 
-Reads always go to the primary. The replica receives writes asynchronously through the Prisma middleware and exists for recovery. Schema changes must be applied to **both** databases.
+Reads always go to the primary. The replica receives writes asynchronously via Prisma middleware and is used for recovery or mirror reads. Schema changes must be applied to **both** databases.
 
-### Enable
+### 8.1 Enable
 
-1. Get the **external** connection string of the secondary database (`?sslmode=require` for managed providers).
-2. Set `DATABASE_URL_REPLICA` in `.env`.
-3. Apply the schema once:
+1. Obtain the **external** URL of the secondary database (`?sslmode=require` for managed providers).
+2. `DATABASE_URL_REPLICA=<url>` in `.env`.
+3. Apply schema once:
    ```bash
    cd backend
    npm run prisma:db:push:replica
    ```
-4. Restart the backend; you should see `Prisma connected (replica)` in the logs (or a warning if it can't reach it — the app keeps running against the primary).
+4. Restart the backend. Look for `Prisma connected (replica)` in logs (or a warning if connection failed — the app still runs against the primary).
 
-### Day‑to‑day
+### 8.2 Day to day
 
 ```bash
 npm run db:status                                  # parity report
-npm run db:sync:incremental:local-to-replica       # forward fix
-npm run db:sync:incremental:replica-to-local       # backward fix
+npm run db:sync:incremental:local-to-replica       # forward fix (most common)
+npm run db:sync:incremental:replica-to-local       # backward fix (recovery)
 ```
 
-For heavy drift or recovery use the snapshot variants. To switch the app to the replica during a primary outage, swap `DATABASE_URL` to the replica URL and restart.
+For severe drift or restore, use the snapshot variants (`db:sync:*`). To "promote" the replica during a primary outage, swap `DATABASE_URL` to the replica URL and restart.
 
-### Caveats
+### 8.3 Caveats
 
-- **Eventually consistent.** If the replica is briefly unreachable, those writes need a manual reconciliation via the sync scripts.
-- **No schema replication.** Migrations against the primary do not touch the replica.
-- **Single‑operator assumption.** Authentication is intentionally disabled. Run behind a network boundary you control.
+- **Eventually consistent**. If the replica is down, those writes stay pending manual reconciliation with the scripts.
+- **No schema replication**. Migrations against the primary do not touch the replica — run the equivalents with `:replica`.
+- **Single‑operator assumption**. No auth; security model is the network perimeter only.
 
 ---
 
-## Repository layout
+## 9. Production
 
-```
-apply-hub/
-├── backend/
-│   ├── prisma/
-│   │   └── schema.prisma                # source of truth for the database
-│   ├── scripts/                         # db-status, db-sync, db-sync-incremental, run-on-replica, prisma-studio-local
-│   └── src/
-│       ├── main.ts                      # bootstrap (CORS, ValidationPipe, exception filter, Swagger)
-│       ├── app.module.ts                # ConfigModule (Joi) + Prisma + feature modules
-│       ├── common/
-│       │   ├── dto/pagination.dto.ts    # PaginationDto + PaginatedResult<T>
-│       │   └── filters/http-exception.filter.ts
-│       ├── config/                      # configuration() + Joi schema
-│       ├── prisma/                      # @Global PrismaService + replica middleware
-│       ├── database/seed.ts             # default templates (EN + ES)
-│       └── modules/
-│           ├── applications/            # controller/service/dto/domain (status resolver lives here)
-│           ├── application-events/
-│           ├── contacts/
-│           ├── dashboard/               # service + types (KPIs, distributions, funnel, heatmap)
-│           ├── platform-settings/       # single-row settings + formConfig validators
-│           ├── search-sessions/
-│           └── templates/
-├── frontend/
-│   └── src/
-│       ├── main.tsx, App.tsx
-│       ├── api/                         # one axios client per resource (typed responses)
-│       ├── components/                  # ui primitives + feature components + dashboard charts
-│       ├── context/                     # PlatformSettingsProvider (theme + vocabulary)
-│       ├── hooks/                       # TanStack Query hooks per resource
-│       ├── lib/                         # axios, query client, theme helpers, formatters, defaults
-│       ├── pages/                       # dashboard, applications (list/detail), search-sessions, templates, settings
-│       └── types/                       # shared enums, labels, models, platform-settings DTOs
-├── docker-compose.yml                   # postgres + backend + frontend
-└── .env.example
-```
+- Backend: `Dockerfile` target `production` runs `prisma migrate deploy && node dist/main.js` with prod‑only deps (`npm ci --omit=dev`). Use versioned migrations (`npm run prisma:migrate:dev` during development to create `migrations/` files).
+- Frontend: `Dockerfile` target `production` builds with Vite and serves `dist/` from `nginx:alpine` with `nginx.conf` SPA fallback (`try_files $uri /index.html`).
+- Swagger is **disabled** automatically when `NODE_ENV === 'production'`.
+- Set `CORS_ORIGIN` to the public SPA domain (comma‑separated if several) and `VITE_API_URL` to the public API domain **before** `vite build`.
