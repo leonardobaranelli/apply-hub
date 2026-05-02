@@ -11,9 +11,9 @@ RUN npm install
 RUN npx prisma generate
 COPY . .
 EXPOSE 3001
-# Pushes the schema (creates tables/enums) and starts Nest in watch mode.
-# `db push` is safe for dev; switch to `prisma migrate deploy` for prod.
-CMD ["sh", "-c", "npx prisma generate && npx prisma db push && npm run start:dev"]
+# Converts legacy PG enum selector columns to varchar (no data loss), then pushes schema.
+# `db push` is dev-oriented; prod uses `prisma migrate deploy`.
+CMD ["sh", "-c", "npx prisma generate && node scripts/ensure-text-selector-columns.mjs && npx prisma db push && npm run start:dev"]
 
 FROM base AS build
 RUN npm install

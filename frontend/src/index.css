@@ -30,6 +30,18 @@
     --border: 220 13% 91%;
     --input: 220 13% 91%;
     --ring: 243 75% 59%;
+
+    /*
+     * Chart palette defaults — overridden per preset (see .theme-preset-*).
+     * 5 hues progress from cooler/early (chart-1) to warmer/late (chart-5)
+     * within the active preset's color family.
+     */
+    --chart-1: 215 70% 60%;
+    --chart-2: 200 80% 56%;
+    --chart-3: 188 86% 50%;
+    --chart-4: 175 70% 46%;
+    --chart-5: 162 60% 48%;
+    --chart-foreground: 0 0% 100%;
   }
 
   /* Dark shell — near-black */
@@ -50,9 +62,31 @@
     --warning-foreground: 220 10% 8%;
     --border: 220 10% 16%;
     --input: 220 10% 16%;
+    --chart-foreground: 220 14% 8%;
   }
 
-  /* Dim — between dark and light (softer UI) */
+  /* Night — step between dark and dim */
+  .night {
+    --background: 220 10% 7%;
+    --foreground: 210 20% 95%;
+    --card: 220 11% 11%;
+    --card-foreground: 210 20% 95%;
+    --secondary: 220 10% 15%;
+    --secondary-foreground: 210 20% 95%;
+    --muted: 220 10% 14%;
+    --muted-foreground: 215 13% 60%;
+    --destructive: 0 70% 52%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 152 56% 41%;
+    --success-foreground: 0 0% 100%;
+    --warning: 44 90% 51%;
+    --warning-foreground: 220 10% 8%;
+    --border: 220 10% 18%;
+    --input: 220 10% 18%;
+    --chart-foreground: 220 14% 8%;
+  }
+
+  /* Dim — mid-dark gray UI */
   .dim {
     --background: 220 12% 12%;
     --foreground: 210 18% 94%;
@@ -70,6 +104,49 @@
     --warning-foreground: 220 12% 10%;
     --border: 220 10% 24%;
     --input: 220 10% 24%;
+    --chart-foreground: 220 14% 8%;
+  }
+
+  /* Mist — lighter gray, bridge toward light */
+  .mist {
+    --background: 220 13% 22%;
+    --foreground: 210 18% 92%;
+    --card: 220 12% 27%;
+    --card-foreground: 210 18% 92%;
+    --secondary: 220 11% 32%;
+    --secondary-foreground: 210 18% 92%;
+    --muted: 220 10% 30%;
+    --muted-foreground: 215 11% 68%;
+    --destructive: 0 62% 48%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 152 48% 38%;
+    --success-foreground: 0 0% 100%;
+    --warning: 40 85% 48%;
+    --warning-foreground: 220 12% 10%;
+    --border: 220 10% 34%;
+    --input: 220 10% 34%;
+    --chart-foreground: 220 14% 8%;
+  }
+
+  /* Soft — near-white cool gray */
+  .soft {
+    --background: 220 14% 94%;
+    --foreground: 222 44% 12%;
+    --card: 0 0% 99%;
+    --card-foreground: 222 44% 12%;
+    --secondary: 220 12% 90%;
+    --secondary-foreground: 222 44% 12%;
+    --muted: 220 12% 90%;
+    --muted-foreground: 220 9% 38%;
+    --destructive: 0 70% 48%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 142 60% 36%;
+    --success-foreground: 0 0% 100%;
+    --warning: 36 88% 46%;
+    --warning-foreground: 28 55% 14%;
+    --border: 220 13% 85%;
+    --input: 220 13% 85%;
+    --chart-foreground: 0 0% 100%;
   }
 
   /* Light shell — paper */
@@ -90,11 +167,18 @@
     --warning-foreground: 28 60% 12%;
     --border: 220 13% 88%;
     --input: 220 13% 88%;
+    --chart-foreground: 0 0% 100%;
   }
 
-  /* Dark + Dim share the same accent curves (6 presets) */
+  /*
+   * Accent curves: dark shells (dark, night, dim, mist) share saturated presets;
+   * bright shells (soft, light) share washed accents on light surfaces.
+   * 12 presets: Ocean first, then hue scale (blue → violet → pink/warm → yellow-green → green → neutral).
+   */
   .dark.theme-preset-ocean,
-  .dim.theme-preset-ocean {
+  .night.theme-preset-ocean,
+  .dim.theme-preset-ocean,
+  .mist.theme-preset-ocean {
     --primary: 188 86% 48%;
     --primary-foreground: 204 80% 8%;
     --accent: 188 42% 14%;
@@ -102,10 +186,53 @@
     --info: 199 89% 55%;
     --info-foreground: 220 10% 8%;
     --ring: 188 86% 48%;
+    --chart-1: 215 75% 62%;
+    --chart-2: 200 82% 58%;
+    --chart-3: 188 86% 52%;
+    --chart-4: 175 72% 48%;
+    --chart-5: 162 60% 50%;
+  }
+
+  .dark.theme-preset-sky,
+  .night.theme-preset-sky,
+  .dim.theme-preset-sky,
+  .mist.theme-preset-sky {
+    --primary: 199 90% 56%;
+    --primary-foreground: 210 40% 8%;
+    --accent: 200 45% 15%;
+    --accent-foreground: 198 85% 88%;
+    --info: 204 88% 58%;
+    --info-foreground: 210 40% 8%;
+    --ring: 199 90% 56%;
+    --chart-1: 230 78% 64%;
+    --chart-2: 215 84% 62%;
+    --chart-3: 199 90% 58%;
+    --chart-4: 188 76% 52%;
+    --chart-5: 178 66% 50%;
+  }
+
+  .dark.theme-preset-indigo,
+  .night.theme-preset-indigo,
+  .dim.theme-preset-indigo,
+  .mist.theme-preset-indigo {
+    --primary: 239 62% 58%;
+    --primary-foreground: 260 60% 98%;
+    --accent: 239 38% 18%;
+    --accent-foreground: 242 85% 88%;
+    --info: 235 65% 58%;
+    --info-foreground: 260 60% 98%;
+    --ring: 239 62% 58%;
+    --chart-1: 268 64% 66%;
+    --chart-2: 252 66% 66%;
+    --chart-3: 239 70% 64%;
+    --chart-4: 226 70% 60%;
+    --chart-5: 213 62% 58%;
   }
 
   .dark.theme-preset-violet,
-  .dim.theme-preset-violet {
+  .night.theme-preset-violet,
+  .dim.theme-preset-violet,
+  .mist.theme-preset-violet {
     --primary: 263 72% 58%;
     --primary-foreground: 260 60% 98%;
     --accent: 263 38% 18%;
@@ -113,21 +240,35 @@
     --info: 258 75% 62%;
     --info-foreground: 260 60% 98%;
     --ring: 263 72% 58%;
+    --chart-1: 295 62% 66%;
+    --chart-2: 278 70% 64%;
+    --chart-3: 263 75% 64%;
+    --chart-4: 250 70% 62%;
+    --chart-5: 235 66% 60%;
   }
 
-  .dark.theme-preset-emerald,
-  .dim.theme-preset-emerald {
-    --primary: 158 64% 42%;
-    --primary-foreground: 156 80% 8%;
-    --accent: 158 40% 14%;
-    --accent-foreground: 156 62% 82%;
-    --info: 172 55% 48%;
-    --info-foreground: 156 80% 8%;
-    --ring: 158 64% 42%;
+  .dark.theme-preset-fuchsia,
+  .night.theme-preset-fuchsia,
+  .dim.theme-preset-fuchsia,
+  .mist.theme-preset-fuchsia {
+    --primary: 292 84% 58%;
+    --primary-foreground: 285 60% 98%;
+    --accent: 292 38% 17%;
+    --accent-foreground: 292 86% 90%;
+    --info: 288 78% 60%;
+    --info-foreground: 285 60% 98%;
+    --ring: 292 84% 58%;
+    --chart-1: 325 72% 64%;
+    --chart-2: 308 76% 62%;
+    --chart-3: 292 84% 62%;
+    --chart-4: 278 76% 60%;
+    --chart-5: 263 66% 60%;
   }
 
   .dark.theme-preset-rose,
-  .dim.theme-preset-rose {
+  .night.theme-preset-rose,
+  .dim.theme-preset-rose,
+  .mist.theme-preset-rose {
     --primary: 350 72% 56%;
     --primary-foreground: 350 60% 98%;
     --accent: 350 42% 16%;
@@ -135,10 +276,53 @@
     --info: 330 70% 58%;
     --info-foreground: 350 60% 98%;
     --ring: 350 72% 56%;
+    --chart-1: 18 70% 62%;
+    --chart-2: 0 72% 64%;
+    --chart-3: 350 76% 62%;
+    --chart-4: 335 70% 60%;
+    --chart-5: 320 60% 58%;
+  }
+
+  .dark.theme-preset-coral,
+  .night.theme-preset-coral,
+  .dim.theme-preset-coral,
+  .mist.theme-preset-coral {
+    --primary: 14 88% 58%;
+    --primary-foreground: 20 80% 10%;
+    --accent: 14 48% 16%;
+    --accent-foreground: 18 90% 82%;
+    --info: 12 85% 54%;
+    --info-foreground: 20 80% 10%;
+    --ring: 14 88% 58%;
+    --chart-1: 38 80% 60%;
+    --chart-2: 26 84% 62%;
+    --chart-3: 14 88% 62%;
+    --chart-4: 4 82% 60%;
+    --chart-5: 350 66% 60%;
+  }
+
+  .dark.theme-preset-terracotta,
+  .night.theme-preset-terracotta,
+  .dim.theme-preset-terracotta,
+  .mist.theme-preset-terracotta {
+    --primary: 18 52% 54%;
+    --primary-foreground: 28 45% 10%;
+    --accent: 20 38% 16%;
+    --accent-foreground: 24 55% 82%;
+    --info: 22 48% 50%;
+    --info-foreground: 28 45% 10%;
+    --ring: 18 52% 54%;
+    --chart-1: 42 52% 56%;
+    --chart-2: 32 58% 56%;
+    --chart-3: 18 60% 56%;
+    --chart-4: 8 60% 52%;
+    --chart-5: 358 50% 52%;
   }
 
   .dark.theme-preset-amber,
-  .dim.theme-preset-amber {
+  .night.theme-preset-amber,
+  .dim.theme-preset-amber,
+  .mist.theme-preset-amber {
     --primary: 38 92% 50%;
     --primary-foreground: 28 80% 10%;
     --accent: 35 45% 14%;
@@ -146,10 +330,53 @@
     --info: 43 85% 52%;
     --info-foreground: 28 80% 10%;
     --ring: 38 92% 50%;
+    --chart-1: 62 76% 56%;
+    --chart-2: 50 88% 56%;
+    --chart-3: 38 92% 54%;
+    --chart-4: 28 88% 54%;
+    --chart-5: 18 80% 52%;
+  }
+
+  .dark.theme-preset-lime,
+  .night.theme-preset-lime,
+  .dim.theme-preset-lime,
+  .mist.theme-preset-lime {
+    --primary: 88 70% 48%;
+    --primary-foreground: 95 75% 8%;
+    --accent: 88 40% 14%;
+    --accent-foreground: 92 72% 82%;
+    --info: 95 62% 46%;
+    --info-foreground: 95 75% 8%;
+    --ring: 88 70% 48%;
+    --chart-1: 118 56% 48%;
+    --chart-2: 102 64% 50%;
+    --chart-3: 88 70% 50%;
+    --chart-4: 75 66% 48%;
+    --chart-5: 60 72% 50%;
+  }
+
+  .dark.theme-preset-emerald,
+  .night.theme-preset-emerald,
+  .dim.theme-preset-emerald,
+  .mist.theme-preset-emerald {
+    --primary: 158 64% 42%;
+    --primary-foreground: 156 80% 8%;
+    --accent: 158 40% 14%;
+    --accent-foreground: 156 62% 82%;
+    --info: 172 55% 48%;
+    --info-foreground: 156 80% 8%;
+    --ring: 158 64% 42%;
+    --chart-1: 188 56% 46%;
+    --chart-2: 172 60% 46%;
+    --chart-3: 158 64% 46%;
+    --chart-4: 145 60% 44%;
+    --chart-5: 130 54% 42%;
   }
 
   .dark.theme-preset-slate,
-  .dim.theme-preset-slate {
+  .night.theme-preset-slate,
+  .dim.theme-preset-slate,
+  .mist.theme-preset-slate {
     --primary: 215 22% 58%;
     --primary-foreground: 220 20% 8%;
     --accent: 215 18% 16%;
@@ -157,9 +384,14 @@
     --info: 205 55% 52%;
     --info-foreground: 220 20% 8%;
     --ring: 215 22% 58%;
+    --chart-1: 248 28% 62%;
+    --chart-2: 232 30% 60%;
+    --chart-3: 215 32% 58%;
+    --chart-4: 200 40% 56%;
+    --chart-5: 188 44% 52%;
   }
 
-  /* Light mode accents (higher contrast on bright surfaces) */
+  .soft.theme-preset-ocean,
   .light.theme-preset-ocean {
     --primary: 188 72% 36%;
     --primary-foreground: 0 0% 100%;
@@ -168,8 +400,46 @@
     --info: 199 80% 42%;
     --info-foreground: 0 0% 100%;
     --ring: 188 72% 36%;
+    --chart-1: 215 70% 44%;
+    --chart-2: 200 75% 40%;
+    --chart-3: 188 78% 36%;
+    --chart-4: 175 65% 32%;
+    --chart-5: 162 56% 30%;
   }
 
+  .soft.theme-preset-sky,
+  .light.theme-preset-sky {
+    --primary: 199 75% 38%;
+    --primary-foreground: 0 0% 100%;
+    --accent: 200 50% 92%;
+    --accent-foreground: 200 65% 24%;
+    --info: 204 72% 38%;
+    --info-foreground: 0 0% 100%;
+    --ring: 199 75% 38%;
+    --chart-1: 230 70% 46%;
+    --chart-2: 215 72% 42%;
+    --chart-3: 199 78% 38%;
+    --chart-4: 188 68% 34%;
+    --chart-5: 178 58% 32%;
+  }
+
+  .soft.theme-preset-indigo,
+  .light.theme-preset-indigo {
+    --primary: 239 55% 46%;
+    --primary-foreground: 0 0% 100%;
+    --accent: 239 38% 93%;
+    --accent-foreground: 239 52% 28%;
+    --info: 235 58% 44%;
+    --info-foreground: 0 0% 100%;
+    --ring: 239 55% 46%;
+    --chart-1: 268 52% 50%;
+    --chart-2: 252 56% 48%;
+    --chart-3: 239 60% 46%;
+    --chart-4: 226 60% 44%;
+    --chart-5: 213 58% 42%;
+  }
+
+  .soft.theme-preset-violet,
   .light.theme-preset-violet {
     --primary: 263 62% 48%;
     --primary-foreground: 0 0% 100%;
@@ -178,18 +448,30 @@
     --info: 258 65% 48%;
     --info-foreground: 0 0% 100%;
     --ring: 263 62% 48%;
+    --chart-1: 295 52% 50%;
+    --chart-2: 278 58% 48%;
+    --chart-3: 263 64% 46%;
+    --chart-4: 250 62% 44%;
+    --chart-5: 235 58% 42%;
   }
 
-  .light.theme-preset-emerald {
-    --primary: 158 58% 32%;
+  .soft.theme-preset-fuchsia,
+  .light.theme-preset-fuchsia {
+    --primary: 292 68% 44%;
     --primary-foreground: 0 0% 100%;
-    --accent: 158 40% 92%;
-    --accent-foreground: 158 55% 22%;
-    --info: 172 50% 36%;
+    --accent: 292 38% 93%;
+    --accent-foreground: 292 55% 26%;
+    --info: 288 65% 46%;
     --info-foreground: 0 0% 100%;
-    --ring: 158 58% 32%;
+    --ring: 292 68% 44%;
+    --chart-1: 325 60% 46%;
+    --chart-2: 308 64% 44%;
+    --chart-3: 292 70% 44%;
+    --chart-4: 278 64% 42%;
+    --chart-5: 263 56% 42%;
   }
 
+  .soft.theme-preset-rose,
   .light.theme-preset-rose {
     --primary: 350 65% 44%;
     --primary-foreground: 0 0% 100%;
@@ -198,8 +480,46 @@
     --info: 330 60% 44%;
     --info-foreground: 0 0% 100%;
     --ring: 350 65% 44%;
+    --chart-1: 18 60% 46%;
+    --chart-2: 0 64% 46%;
+    --chart-3: 350 68% 44%;
+    --chart-4: 335 62% 42%;
+    --chart-5: 320 56% 42%;
   }
 
+  .soft.theme-preset-coral,
+  .light.theme-preset-coral {
+    --primary: 14 78% 42%;
+    --primary-foreground: 0 0% 100%;
+    --accent: 14 55% 92%;
+    --accent-foreground: 14 65% 26%;
+    --info: 12 72% 40%;
+    --info-foreground: 0 0% 100%;
+    --ring: 14 78% 42%;
+    --chart-1: 38 72% 44%;
+    --chart-2: 26 76% 44%;
+    --chart-3: 14 78% 42%;
+    --chart-4: 4 72% 42%;
+    --chart-5: 350 58% 44%;
+  }
+
+  .soft.theme-preset-terracotta,
+  .light.theme-preset-terracotta {
+    --primary: 18 48% 40%;
+    --primary-foreground: 0 0% 100%;
+    --accent: 22 38% 90%;
+    --accent-foreground: 20 45% 24%;
+    --info: 22 42% 38%;
+    --info-foreground: 0 0% 100%;
+    --ring: 18 48% 40%;
+    --chart-1: 42 48% 42%;
+    --chart-2: 32 50% 40%;
+    --chart-3: 18 54% 38%;
+    --chart-4: 8 52% 38%;
+    --chart-5: 358 46% 38%;
+  }
+
+  .soft.theme-preset-amber,
   .light.theme-preset-amber {
     --primary: 32 88% 44%;
     --primary-foreground: 0 0% 100%;
@@ -208,8 +528,46 @@
     --info: 38 85% 42%;
     --info-foreground: 0 0% 100%;
     --ring: 32 88% 44%;
+    --chart-1: 62 70% 40%;
+    --chart-2: 46 84% 42%;
+    --chart-3: 32 88% 42%;
+    --chart-4: 22 78% 42%;
+    --chart-5: 14 72% 42%;
   }
 
+  .soft.theme-preset-lime,
+  .light.theme-preset-lime {
+    --primary: 88 54% 34%;
+    --primary-foreground: 0 0% 100%;
+    --accent: 88 42% 91%;
+    --accent-foreground: 88 55% 22%;
+    --info: 92 50% 36%;
+    --info-foreground: 0 0% 100%;
+    --ring: 88 54% 34%;
+    --chart-1: 118 46% 34%;
+    --chart-2: 102 50% 34%;
+    --chart-3: 88 56% 34%;
+    --chart-4: 75 54% 32%;
+    --chart-5: 60 56% 32%;
+  }
+
+  .soft.theme-preset-emerald,
+  .light.theme-preset-emerald {
+    --primary: 158 58% 32%;
+    --primary-foreground: 0 0% 100%;
+    --accent: 158 40% 92%;
+    --accent-foreground: 158 55% 22%;
+    --info: 172 50% 36%;
+    --info-foreground: 0 0% 100%;
+    --ring: 158 58% 32%;
+    --chart-1: 188 50% 32%;
+    --chart-2: 172 54% 34%;
+    --chart-3: 158 60% 32%;
+    --chart-4: 145 54% 30%;
+    --chart-5: 130 50% 30%;
+  }
+
+  .soft.theme-preset-slate,
   .light.theme-preset-slate {
     --primary: 215 25% 42%;
     --primary-foreground: 0 0% 100%;
@@ -218,6 +576,11 @@
     --info: 205 55% 40%;
     --info-foreground: 0 0% 100%;
     --ring: 215 25% 42%;
+    --chart-1: 248 28% 46%;
+    --chart-2: 232 30% 44%;
+    --chart-3: 215 32% 42%;
+    --chart-4: 200 38% 40%;
+    --chart-5: 188 42% 38%;
   }
 }
 

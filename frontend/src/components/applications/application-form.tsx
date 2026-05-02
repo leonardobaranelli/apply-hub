@@ -287,7 +287,7 @@ export function ApplicationForm({
 
   const postingLanguageOptions = useMemo(
     () => [
-      { value: '', label: 'Sin especificar' },
+      { value: '', label: 'Unspecified' },
       {
         value: JobPostingLanguage.EN,
         label: postingLanguageLabels[JobPostingLanguage.EN],

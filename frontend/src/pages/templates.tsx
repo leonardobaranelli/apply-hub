@@ -205,7 +205,7 @@ function TemplateCard({
             {template.isFavorite ? (
               <Star
                 size={14}
-                className="fill-warning text-warning"
+                className="fill-chart-3 text-chart-3"
                 aria-label="Favorite"
               />
             ) : null}
@@ -222,12 +222,15 @@ function TemplateCard({
         <button
           type="button"
           onClick={() => toggleFav.mutate(template.id)}
-          className="text-muted-foreground hover:text-warning"
+          className={cn(
+            'transition-colors hover:text-chart-3',
+            template.isFavorite ? 'text-chart-3' : 'text-muted-foreground',
+          )}
           aria-label="Favorite"
         >
           <Star
             size={16}
-            className={template.isFavorite ? 'fill-warning text-warning' : ''}
+            className={template.isFavorite ? 'fill-chart-3 text-chart-3' : ''}
           />
         </button>
       </CardHeader>
