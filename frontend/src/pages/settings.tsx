@@ -1,4 +1,10 @@
-import { useEffect, useMemo, useState, type Dispatch, type SetStateAction } from 'react';
+import {
+  useLayoutEffect,
+  useMemo,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from 'react';
 import { Check, ChevronDown, ChevronUp, Plus, Save, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -7,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PageHeader } from '@/components/layout/page-header';
 import { usePlatformSettings } from '@/context/platform-settings-context';
-import { applyDocumentTheme } from '@/lib/apply-theme';
+import { applyDocumentTheme, getAppliedThemeSnapshot } from '@/lib/apply-theme';
 import {
   DEFAULT_RESUME_VERSION_OPTIONS,
   DEFAULT_ROLE_TITLE_OPTIONS,
@@ -15,6 +21,7 @@ import {
 import {
   APPEARANCE_LABELS,
   APPEARANCE_MODES,
+  THEME_PRESET_SWATCH_CLASS,
   THEME_PRESETS,
   type AppearanceMode,
   type ThemePresetId,
@@ -255,11 +262,14 @@ export function SettingsPage() {
     ...DEFAULT_RESUME_VERSION_OPTIONS,
   ]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
+    const applied = getAppliedThemeSnapshot();
+    setThemeDraft(applied.theme);
+    setAppearanceDraft(applied.appearance);
+
     if (!settings) return;
+
     const cfg = settings.formConfig ?? {};
-    setAppearanceDraft((settings.appearanceMode ?? 'dark') as AppearanceMode);
-    setThemeDraft(settings.themeId as ThemePresetId);
 
     setMethodOrder(
       normalizeOrder(cfg, ALL_METHODS, BUILTIN_METHOD, 'customApplicationMethods', 'applicationMethodOrder'),
@@ -334,7 +344,12 @@ export function SettingsPage() {
     setEmploymentSlugError('');
     setNewSearchPlatformSlug('');
     setSearchPlatformSlugError('');
-  }, [settings]);
+  }, [
+    settings?.id,
+    settings?.updatedAt,
+    settings?.themeId,
+    settings?.appearanceMode,
+  ]);
 
   const builtConfig = useMemo(
     () =>
@@ -650,7 +665,7 @@ export function SettingsPage() {
             })}
           </div>
           <h2 className="mb-3 text-sm font-semibold text-foreground">Color preset</h2>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
             {THEME_PRESETS.map((t) => {
               const active = themeDraft === t.id;
               return (
@@ -675,12 +690,7 @@ export function SettingsPage() {
                   <div
                     className={cn(
                       'mt-3 h-2 rounded-full',
-                      t.id === 'ocean' && 'bg-[hsl(188,86%,48%)]',
-                      t.id === 'violet' && 'bg-[hsl(263,72%,58%)]',
-                      t.id === 'emerald' && 'bg-[hsl(158,64%,42%)]',
-                      t.id === 'rose' && 'bg-[hsl(350,72%,56%)]',
-                      t.id === 'amber' && 'bg-[hsl(38,92%,50%)]',
-                      t.id === 'slate' && 'bg-[hsl(215,22%,58%)]',
+                      THEME_PRESET_SWATCH_CLASS[t.id],
                     )}
                   />
                 </button>
