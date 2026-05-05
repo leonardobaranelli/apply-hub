@@ -424,9 +424,17 @@ Replica (they target `DATABASE_URL_REPLICA` via `run-on-replica.mjs`):
 
 Ops on primary ↔ replica:
 
-- `npm run db:status` — JSON with `counts` per model (including pivot `_ApplicationContacts`) and `MAX(updatedAt)` per model on both sides, plus `sameCounts` boolean.
-- `npm run db:sync:incremental:local-to-replica` / `replica-to-local` — paginated by `id ASC` (batch 200), upsert only if `source.updatedAt > target.updatedAt`. Also syncs `_ApplicationContacts` with raw SQL (`INSERT ... ON CONFLICT DO NOTHING`).
+- `npm run db:status` — JSON with `counts` per model (`contacts`, `jobSearchSessions`, `jobApplications`, `applicationEvents`, `templates`, `platformSettings`, `applicationContactsPivot`) and `MAX(updatedAt)` per model on both sides, plus `sameCounts` boolean.
+- `npm run db:sync:incremental:local-to-replica` / `replica-to-local` — FK-safe order (`contact → jobSearchSession → jobApplication → applicationEvent → template → platformSettings`), paginated by `id ASC` (batch 200), upsert only if `source.updatedAt > target.updatedAt`. Also syncs `_ApplicationContacts` with raw SQL (`INSERT ... ON CONFLICT DO NOTHING`). Append `-- --prune` to also delete target rows missing from source (children pruned first).
 - `npm run db:sync:local-to-replica` / `replica-to-local` — full snapshot via `pg_dump --no-owner --no-acl --clean --if-exists | psql --set=ON_ERROR_STOP=1` inside a one‑off `postgres:18-alpine` (no `pg_dump` needed on the host). Assumes network `apply-hub_default` (override with `DOCKER_NETWORK`).
+
+Tests (Jest):
+
+- `npm test` — runs all unit suites (`test/prisma`, `test/modules`, `test/scripts`).
+- `npm run test:watch` / `npm run test:cov` — watch mode and coverage report.
+- The `prisma/` suite locks the write-mirror contract: every mutating action (`create`/`createMany`/`update`/`updateMany`/`upsert`/`delete`/`deleteMany`) is replicated for all 6 models, reads are never replicated, the queue is serial, args are snapshotted, FK errors (`P2003`) retry with backoff, and replica failures never break the primary path.
+- The `modules/` suites assert that every service goes through `PrismaService` (so the replication middleware fires) and that transactional flows (`ApplicationsService.create`, `changeStatus`, `markStaleAsGhosted`, `ApplicationEventsService.create`) emit both the row write and the timeline event in a single `$transaction` callback.
+- The `scripts/` suites lock the model lists in `db-sync-incremental.mjs` and `db-status.mjs` to the schema (forces a test failure if a future model is added without updating either script).
 
 ---
 
