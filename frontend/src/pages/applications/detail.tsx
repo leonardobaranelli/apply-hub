@@ -238,7 +238,7 @@ export function ApplicationDetailPage() {
               />
               {application.postingLanguage ? (
                 <Row
-                  label="Idioma de la propuesta"
+                  label="Job required language"
                   value={
                     postingLanguageLabels[application.postingLanguage]
                   }

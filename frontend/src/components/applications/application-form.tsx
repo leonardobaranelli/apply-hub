@@ -387,7 +387,7 @@ export function ApplicationForm({
           >
             <Input type="date" {...register('vacancyPostedDate')} />
           </Field>
-          <Field label="Idioma de la propuesta laboral">
+          <Field label="Job required language">
             <Select
               {...register('postingLanguage')}
               options={postingLanguageOptions}
