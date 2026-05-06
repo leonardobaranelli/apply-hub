@@ -118,6 +118,21 @@ function diffLabels(
   return Object.keys(out).length ? out : undefined;
 }
 
+function stableSerialize(value: unknown): string {
+  if (Array.isArray(value)) {
+    return `[${value.map((item) => stableSerialize(item)).join(',')}]`;
+  }
+  if (value && typeof value === 'object') {
+    const entries = Object.entries(value as Record<string, unknown>)
+      .filter(([, v]) => v !== undefined)
+      .sort(([a], [b]) => a.localeCompare(b));
+    return `{${entries
+      .map(([k, v]) => `${JSON.stringify(k)}:${stableSerialize(v)}`)
+      .join(',')}}`;
+  }
+  return JSON.stringify(value);
+}
+
 function buildFormConfig(params: {
   methodOrder: string[];
   labelByMethod: Record<string, string>;
@@ -274,6 +289,9 @@ export function SettingsPage() {
   const [resumeVersionOptions, setResumeVersionOptions] = useState<string[]>([
     ...DEFAULT_RESUME_VERSION_OPTIONS,
   ]);
+  const [persistedTheme, setPersistedTheme] = useState<ThemePresetId>('ocean');
+  const [persistedAppearance, setPersistedAppearance] = useState<AppearanceMode>('dark');
+  const [persistedConfigSignature, setPersistedConfigSignature] = useState('{}');
 
   const hasInitializedRef = useRef(false);
 
@@ -362,6 +380,10 @@ export function SettingsPage() {
     setNewSearchPlatformSlug('');
     setSearchPlatformSlugError('');
 
+    setPersistedTheme((settings.themeId as ThemePresetId) ?? applied.theme);
+    setPersistedAppearance((settings.appearanceMode as AppearanceMode) ?? applied.appearance);
+    setPersistedConfigSignature(stableSerialize(cfg));
+
     hasInitializedRef.current = true;
   }, [settings]);
 
@@ -403,12 +425,24 @@ export function SettingsPage() {
     ],
   );
 
+  const configSignature = useMemo(
+    () => stableSerialize(builtConfig),
+    [builtConfig],
+  );
+
   const isDirty = useMemo(() => {
-    if (!settings) return false;
-    if (themeDraft !== settings.themeId) return true;
-    if (appearanceDraft !== (settings.appearanceMode ?? 'dark')) return true;
-    return JSON.stringify(builtConfig) !== JSON.stringify(settings.formConfig ?? {});
-  }, [settings, themeDraft, appearanceDraft, builtConfig]);
+    if (!hasInitializedRef.current) return false;
+    if (themeDraft !== persistedTheme) return true;
+    if (appearanceDraft !== persistedAppearance) return true;
+    return configSignature !== persistedConfigSignature;
+  }, [
+    themeDraft,
+    appearanceDraft,
+    configSignature,
+    persistedTheme,
+    persistedAppearance,
+    persistedConfigSignature,
+  ]);
 
   const tryAddCustomSlug = (
     raw: string,
@@ -473,13 +507,23 @@ export function SettingsPage() {
           appearanceMode: appearanceDraft,
           formConfig: builtConfig,
         });
+        setPersistedTheme(themeDraft);
+        setPersistedAppearance(appearanceDraft);
+        setPersistedConfigSignature(configSignature);
         setLastAutoSavedAt(Date.now());
         if (showToast) toast.success('Settings saved');
       } catch {
         /* api interceptor */
       }
     },
-    [settings, themeDraft, appearanceDraft, builtConfig, updateSettings],
+    [
+      settings,
+      themeDraft,
+      appearanceDraft,
+      builtConfig,
+      configSignature,
+      updateSettings,
+    ],
   );
 
   const handleSave = useCallback(
