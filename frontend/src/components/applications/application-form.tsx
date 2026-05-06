@@ -10,7 +10,7 @@ import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { usePlatformSettings } from '@/context/platform-settings-context';
 import {
-  DEFAULT_RESUME_VERSION_OPTIONS,
+  DEFAULT_RESUME_VERSION,
   DEFAULT_ROLE_TITLE,
 } from '@/lib/form-defaults';
 import { useSearchSessionsList } from '@/hooks/use-search-sessions';
@@ -60,6 +60,7 @@ const schema = z.object({
   companyName: z.string().trim().min(1, 'Company is required'),
   companyUrl: z.string().optional().or(z.literal('')),
   roleTitle: z.string().min(1, 'Role is required'),
+  jobTitle: z.string().trim().min(1, 'Job title is required'),
   position: z.string().min(1, 'Position type is required'),
   applicationDate: z.string().min(1, 'Date is required'),
   vacancyPostedDate: z.string().min(1, 'Date is required'),
@@ -179,6 +180,7 @@ export function ApplicationForm({
       companyName: defaultValues?.companyName ?? PLACEHOLDER,
       companyUrl: defaultValues?.companyUrl ?? (isEdit ? '' : PLACEHOLDER),
       roleTitle: defaultValues?.roleTitle ?? DEFAULT_ROLE_TITLE,
+      jobTitle: defaultValues?.jobTitle ?? '',
       position: defaultValues?.position ?? PositionType.BACKEND,
       applicationDate: dateInputDefault(defaultValues?.applicationDate, todayIso()),
       vacancyPostedDate: dateInputDefault(
@@ -207,8 +209,7 @@ export function ApplicationForm({
       tags: defaultValues?.tags?.join(', ') ?? '',
       jobDescription: defaultValues?.jobDescription ?? '',
       postingLanguage: defaultValues?.postingLanguage ?? '',
-      resumeVersion:
-        defaultValues?.resumeVersion ?? DEFAULT_RESUME_VERSION_OPTIONS[0],
+      resumeVersion: defaultValues?.resumeVersion ?? DEFAULT_RESUME_VERSION,
       contactName: defaultValues?.contactName ?? (isEdit ? '' : PLACEHOLDER),
       contactLinkedin:
         defaultValues?.contactLinkedin ?? (isEdit ? '' : PLACEHOLDER),
@@ -309,6 +310,7 @@ export function ApplicationForm({
       companyName: values.companyName.trim() || PLACEHOLDER,
       companyUrl: stripPlaceholder(values.companyUrl),
       roleTitle: values.roleTitle,
+      jobTitle: values.jobTitle.trim(),
       position: values.position,
       applicationDate: values.applicationDate,
       vacancyPostedDate: values.vacancyPostedDate,
@@ -368,6 +370,12 @@ export function ApplicationForm({
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <Field label="Company *" error={errors.companyName?.message}>
             <Input {...register('companyName')} />
+          </Field>
+          <Field label="Job title *" error={errors.jobTitle?.message}>
+            <Input
+              {...register('jobTitle')}
+              placeholder="e.g. Backend Engineer"
+            />
           </Field>
           <Field label="Role *" error={errors.roleTitle?.message}>
             <Select {...register('roleTitle')} options={roleOptions} />

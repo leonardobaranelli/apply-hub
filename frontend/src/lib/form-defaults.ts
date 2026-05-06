@@ -14,3 +14,4 @@ export const DEFAULT_RESUME_VERSION_OPTIONS = [
 ] as const;
 
 export const DEFAULT_ROLE_TITLE = 'Junior Advanced/SSR';
+export const DEFAULT_RESUME_VERSION = 'English version';
