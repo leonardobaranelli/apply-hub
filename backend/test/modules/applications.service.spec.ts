@@ -42,7 +42,8 @@ describe('ApplicationsService', () => {
         id: 'app-1',
         status: ApplicationStatus.APPLIED,
         stage: ApplicationStage.SUBMITTED,
-        roleTitle: 'Backend Engineer',
+        roleTitle: 'Senior',
+        jobTitle: 'Backend Engineer',
         applicationMethod: 'linkedin_easy_apply',
         source: null,
         platform: null,
@@ -51,7 +52,8 @@ describe('ApplicationsService', () => {
 
       await service.create({
         companyName: '  Acme  ',
-        roleTitle: 'Backend Engineer',
+        roleTitle: 'Senior',
+        jobTitle: '  Backend Engineer  ',
         position: 'backend',
         applicationMethod: 'linkedin_easy_apply',
         workMode: 'remote',
@@ -76,6 +78,7 @@ describe('ApplicationsService', () => {
 
       const appArgs = prisma.jobApplication.create.mock.calls[0][0];
       expect(appArgs.data.companyName).toBe('Acme');
+      expect(appArgs.data.jobTitle).toBe('Backend Engineer');
       expect(appArgs.data.lastActivityAt).toBeInstanceOf(Date);
       expect(appArgs.data.applicationDate).toBeInstanceOf(Date);
       expect(appArgs.data.vacancyPostedDate).toBeInstanceOf(Date);
@@ -90,6 +93,7 @@ describe('ApplicationsService', () => {
         service.create({
           companyName: 'Acme',
           roleTitle: 'X',
+          jobTitle: 'Backend Engineer',
           applicationMethod: 'made_up',
           workMode: 'remote',
           priority: 'medium',
@@ -106,6 +110,7 @@ describe('ApplicationsService', () => {
         service.create({
           companyName: 'Acme',
           roleTitle: 'X',
+          jobTitle: 'Backend Engineer',
           applicationMethod: 'linkedin_easy_apply',
           workMode: 'remote',
           priority: 'medium',

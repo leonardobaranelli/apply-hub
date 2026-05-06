@@ -123,10 +123,15 @@ export function ApplicationDetailPage() {
       </div>
 
       <header className="mb-6 space-y-3">
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-baseline gap-2">
           <h1 className="text-2xl font-semibold tracking-tight">
             {application.roleTitle}
           </h1>
+          {application.jobTitle ? (
+            <span className="text-lg font-medium text-foreground">
+              · {application.jobTitle}
+            </span>
+          ) : null}
           <StatusBadge status={application.status} />
           <Badge variant="outline">{stageLabels[application.stage]}</Badge>
           {application.archivedAt ? (

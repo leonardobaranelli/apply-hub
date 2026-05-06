@@ -13,6 +13,7 @@ export interface CreateApplicationInput {
   companyName: string;
   companyUrl?: string | null;
   roleTitle: string;
+  jobTitle: string;
   position?: string;
   jobDescription?: string | null;
   jobUrl?: string | null;

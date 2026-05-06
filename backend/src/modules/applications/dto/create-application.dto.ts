@@ -43,6 +43,14 @@ export class CreateApplicationDto {
   @MaxLength(250)
   roleTitle!: string;
 
+  @ApiProperty({
+    description: 'Free-text job title from the vacancy (e.g. "Backend Engineer").',
+  })
+  @IsString()
+  @MinLength(1)
+  @MaxLength(250)
+  jobTitle!: string;
+
   @ApiPropertyOptional({
     description: 'Built-in or custom position id from platform settings',
     default: PositionType.BACKEND,

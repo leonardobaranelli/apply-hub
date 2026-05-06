@@ -30,10 +30,15 @@ export function ApplicationRow({ application }: Props) {
       className="group flex items-start gap-4 rounded-xl border border-border bg-card p-4 transition-all hover:border-primary/50 hover:shadow-md"
     >
       <div className="flex-1 space-y-2">
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-baseline gap-2">
           <h3 className="text-base font-semibold leading-tight">
             {application.roleTitle}
           </h3>
+          {application.jobTitle ? (
+            <span className="text-sm font-medium text-foreground">
+              · {application.jobTitle}
+            </span>
+          ) : null}
           <span className="text-sm text-muted-foreground">
             · {application.companyName}
           </span>
