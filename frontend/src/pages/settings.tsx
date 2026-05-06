@@ -1,11 +1,24 @@
 import {
+  useCallback,
+  useEffect,
   useLayoutEffect,
   useMemo,
+  useRef,
   useState,
   type Dispatch,
   type SetStateAction,
 } from 'react';
-import { Check, ChevronDown, ChevronUp, Plus, Save, Trash2 } from 'lucide-react';
+import {
+  Check,
+  CheckCircle2,
+  ChevronDown,
+  ChevronUp,
+  CloudUpload,
+  Loader2,
+  Plus,
+  Save,
+  Trash2,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -103,6 +116,21 @@ function diffLabels(
     if (v && v !== def) out[id] = v;
   }
   return Object.keys(out).length ? out : undefined;
+}
+
+function stableSerialize(value: unknown): string {
+  if (Array.isArray(value)) {
+    return `[${value.map((item) => stableSerialize(item)).join(',')}]`;
+  }
+  if (value && typeof value === 'object') {
+    const entries = Object.entries(value as Record<string, unknown>)
+      .filter(([, v]) => v !== undefined)
+      .sort(([a], [b]) => a.localeCompare(b));
+    return `{${entries
+      .map(([k, v]) => `${JSON.stringify(k)}:${stableSerialize(v)}`)
+      .join(',')}}`;
+  }
+  return JSON.stringify(value);
 }
 
 function buildFormConfig(params: {
@@ -261,8 +289,15 @@ export function SettingsPage() {
   const [resumeVersionOptions, setResumeVersionOptions] = useState<string[]>([
     ...DEFAULT_RESUME_VERSION_OPTIONS,
   ]);
+  const [persistedTheme, setPersistedTheme] = useState<ThemePresetId>('ocean');
+  const [persistedAppearance, setPersistedAppearance] = useState<AppearanceMode>('dark');
+  const [persistedConfigSignature, setPersistedConfigSignature] = useState('{}');
+
+  const hasInitializedRef = useRef(false);
 
   useLayoutEffect(() => {
+    if (hasInitializedRef.current) return;
+
     const applied = getAppliedThemeSnapshot();
     setThemeDraft(applied.theme);
     setAppearanceDraft(applied.appearance);
@@ -344,12 +379,13 @@ export function SettingsPage() {
     setEmploymentSlugError('');
     setNewSearchPlatformSlug('');
     setSearchPlatformSlugError('');
-  }, [
-    settings?.id,
-    settings?.updatedAt,
-    settings?.themeId,
-    settings?.appearanceMode,
-  ]);
+
+    setPersistedTheme((settings.themeId as ThemePresetId) ?? applied.theme);
+    setPersistedAppearance((settings.appearanceMode as AppearanceMode) ?? applied.appearance);
+    setPersistedConfigSignature(stableSerialize(cfg));
+
+    hasInitializedRef.current = true;
+  }, [settings]);
 
   const builtConfig = useMemo(
     () =>
@@ -389,12 +425,24 @@ export function SettingsPage() {
     ],
   );
 
+  const configSignature = useMemo(
+    () => stableSerialize(builtConfig),
+    [builtConfig],
+  );
+
   const isDirty = useMemo(() => {
-    if (!settings) return false;
-    if (themeDraft !== settings.themeId) return true;
-    if (appearanceDraft !== (settings.appearanceMode ?? 'dark')) return true;
-    return JSON.stringify(builtConfig) !== JSON.stringify(settings.formConfig ?? {});
-  }, [settings, themeDraft, appearanceDraft, builtConfig]);
+    if (!hasInitializedRef.current) return false;
+    if (themeDraft !== persistedTheme) return true;
+    if (appearanceDraft !== persistedAppearance) return true;
+    return configSignature !== persistedConfigSignature;
+  }, [
+    themeDraft,
+    appearanceDraft,
+    configSignature,
+    persistedTheme,
+    persistedAppearance,
+    persistedConfigSignature,
+  ]);
 
   const tryAddCustomSlug = (
     raw: string,
@@ -448,19 +496,49 @@ export function SettingsPage() {
     });
   };
 
-  const handleSave = async (): Promise<void> => {
-    if (!settings) return;
-    try {
-      await updateSettings({
-        themeId: themeDraft,
-        appearanceMode: appearanceDraft,
-        formConfig: builtConfig,
-      });
-      toast.success('Settings saved');
-    } catch {
-      /* api interceptor */
-    }
-  };
+  const [lastAutoSavedAt, setLastAutoSavedAt] = useState<number | null>(null);
+
+  const persistDraft = useCallback(
+    async (showToast: boolean): Promise<void> => {
+      if (!settings) return;
+      try {
+        await updateSettings({
+          themeId: themeDraft,
+          appearanceMode: appearanceDraft,
+          formConfig: builtConfig,
+        });
+        setPersistedTheme(themeDraft);
+        setPersistedAppearance(appearanceDraft);
+        setPersistedConfigSignature(configSignature);
+        setLastAutoSavedAt(Date.now());
+        if (showToast) toast.success('Settings saved');
+      } catch {
+        /* api interceptor */
+      }
+    },
+    [
+      settings,
+      themeDraft,
+      appearanceDraft,
+      builtConfig,
+      configSignature,
+      updateSettings,
+    ],
+  );
+
+  const handleSave = useCallback(
+    () => persistDraft(true),
+    [persistDraft],
+  );
+
+  useEffect(() => {
+    if (!hasInitializedRef.current) return;
+    if (!settings || !isDirty || isUpdating) return;
+    const t = window.setTimeout(() => {
+      void persistDraft(false);
+    }, 700);
+    return () => window.clearTimeout(t);
+  }, [isDirty, isUpdating, settings, persistDraft]);
 
   const selectTheme = (id: ThemePresetId): void => {
     setThemeDraft(id);
@@ -882,7 +960,29 @@ export function SettingsPage() {
           </CardContent>
         </Card>
 
-        <div className="flex justify-end">
+        <div className="flex flex-wrap items-center justify-end gap-3">
+          <span
+            className="text-xs text-muted-foreground"
+            aria-live="polite"
+            role="status"
+          >
+            {isUpdating ? (
+              <span className="inline-flex items-center gap-1.5">
+                <Loader2 size={14} className="animate-spin" />
+                Saving…
+              </span>
+            ) : isDirty ? (
+              <span className="inline-flex items-center gap-1.5 text-amber-600 dark:text-amber-400">
+                <CloudUpload size={14} />
+                Unsaved changes
+              </span>
+            ) : lastAutoSavedAt ? (
+              <span className="inline-flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
+                <CheckCircle2 size={14} />
+                All changes saved
+              </span>
+            ) : null}
+          </span>
           <Button
             onClick={() => void handleSave()}
             loading={isUpdating}
