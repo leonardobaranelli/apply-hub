@@ -1,0 +1,513 @@
+{
+  "info": {
+    "name": "ApplyHub API",
+    "_postman_id": "5b9e4f00-1a2b-4c3d-9e10-applyhubapi01",
+    "description": "Full API surface of the ApplyHub backend (NestJS, prefix `/api`).\n\nCollection variables:\n- `baseUrl` — defaults to `http://localhost:3001/api`.\n- `applicationId` — placeholder UUID used by application-scoped requests.\n- `searchSessionId`, `contactId`, `templateId`, `eventId` — placeholder UUIDs.\n\nReplace the variables with real values once you have created the resources.\n\nNo authentication is required — the API assumes a controlled network perimeter.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3001/api" },
+    { "key": "applicationId", "value": "00000000-0000-0000-0000-000000000000" },
+    { "key": "searchSessionId", "value": "00000000-0000-0000-0000-000000000000" },
+    { "key": "contactId", "value": "00000000-0000-0000-0000-000000000000" },
+    { "key": "templateId", "value": "00000000-0000-0000-0000-000000000000" },
+    { "key": "eventId", "value": "00000000-0000-0000-0000-000000000000" }
+  ],
+  "item": [
+    {
+      "name": "Applications",
+      "item": [
+        {
+          "name": "Create application",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/applications", "host": ["{{baseUrl}}"], "path": ["applications"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"companyName\": \"Acme\",\n  \"companyUrl\": \"https://acme.com\",\n  \"roleTitle\": \"Senior Backend\",\n  \"jobTitle\": \"Backend Engineer\",\n  \"position\": \"backend\",\n  \"jobDescription\": \"We are hiring a backend engineer…\",\n  \"jobUrl\": \"https://acme.com/jobs/123\",\n  \"location\": \"Remote · LATAM\",\n  \"workMode\": \"remote\",\n  \"employmentType\": \"full_time\",\n  \"applicationDate\": \"2026-05-06\",\n  \"vacancyPostedDate\": \"2026-05-04\",\n  \"applicationMethod\": \"linkedin_easy_apply\",\n  \"source\": \"LinkedIn\",\n  \"platform\": \"LinkedIn\",\n  \"salaryMin\": 120000,\n  \"salaryMax\": 150000,\n  \"currency\": \"USD\",\n  \"salaryPeriod\": \"year\",\n  \"priority\": \"medium\",\n  \"tags\": [\"nodejs\", \"remote\"],\n  \"notes\": \"Referred by Jane.\",\n  \"resumeVersion\": \"English version\",\n  \"postingLanguage\": \"en\",\n  \"contactName\": \"Ada Lovelace\",\n  \"contactLinkedin\": \"https://linkedin.com/in/ada\",\n  \"contactEmail\": \"ada@acme.com\"\n}"
+            }
+          }
+        },
+        {
+          "name": "List applications",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/applications?page=1&limit=25&sortBy=applicationDate&sortDir=desc",
+              "host": ["{{baseUrl}}"],
+              "path": ["applications"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "25" },
+                { "key": "search", "value": "", "disabled": true },
+                { "key": "status", "value": "applied,screening", "disabled": true },
+                { "key": "stage", "value": "", "disabled": true },
+                { "key": "position", "value": "backend,fullstack", "disabled": true },
+                { "key": "method", "value": "linkedin_easy_apply", "disabled": true },
+                { "key": "workMode", "value": "remote", "disabled": true },
+                { "key": "priority", "value": "high", "disabled": true },
+                { "key": "companyName", "value": "Acme", "disabled": true },
+                { "key": "tags", "value": "nodejs,remote", "disabled": true },
+                { "key": "fromDate", "value": "2026-01-01", "disabled": true },
+                { "key": "toDate", "value": "2026-12-31", "disabled": true },
+                { "key": "onlyActive", "value": "true", "disabled": true },
+                { "key": "includeArchived", "value": "true", "disabled": true },
+                { "key": "sortBy", "value": "applicationDate" },
+                { "key": "sortDir", "value": "desc" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get application by id",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/applications/{{applicationId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["applications", "{{applicationId}}"]
+            }
+          }
+        },
+        {
+          "name": "Update application (partial)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/applications/{{applicationId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["applications", "{{applicationId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"notes\": \"Updated notes\",\n  \"priority\": \"high\",\n  \"tags\": [\"nodejs\", \"remote\", \"interesting\"]\n}"
+            }
+          }
+        },
+        {
+          "name": "Change status (transactional + emits event)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/applications/{{applicationId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["applications", "{{applicationId}}", "status"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"screening\",\n  \"stage\": \"recruiter_screen\",\n  \"title\": \"Recruiter call scheduled\",\n  \"description\": \"30 min intro chat next Tuesday.\",\n  \"channel\": \"video_call\",\n  \"occurredAt\": \"2026-05-06T10:00:00Z\",\n  \"metadata\": { \"agency\": \"Acme HR\" }\n}"
+            }
+          }
+        },
+        {
+          "name": "Replace linked contacts",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/applications/{{applicationId}}/contacts",
+              "host": ["{{baseUrl}}"],
+              "path": ["applications", "{{applicationId}}", "contacts"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contactIds\": [\"{{contactId}}\"]\n}"
+            }
+          }
+        },
+        {
+          "name": "Archive application",
+          "request": {
+            "method": "PATCH",
+            "url": {
+              "raw": "{{baseUrl}}/applications/{{applicationId}}/archive",
+              "host": ["{{baseUrl}}"],
+              "path": ["applications", "{{applicationId}}", "archive"]
+            }
+          }
+        },
+        {
+          "name": "Restore application",
+          "request": {
+            "method": "PATCH",
+            "url": {
+              "raw": "{{baseUrl}}/applications/{{applicationId}}/restore",
+              "host": ["{{baseUrl}}"],
+              "path": ["applications", "{{applicationId}}", "restore"]
+            }
+          }
+        },
+        {
+          "name": "Mark stale as ghosted",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/applications/mark-stale-ghosted?days=21",
+              "host": ["{{baseUrl}}"],
+              "path": ["applications", "mark-stale-ghosted"],
+              "query": [{ "key": "days", "value": "21" }]
+            }
+          }
+        },
+        {
+          "name": "Delete application",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/applications/{{applicationId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["applications", "{{applicationId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Application events",
+      "item": [
+        {
+          "name": "Create event",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/events", "host": ["{{baseUrl}}"], "path": ["events"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"applicationId\": \"{{applicationId}}\",\n  \"type\": \"interview_scheduled\",\n  \"title\": \"Tech screen with hiring manager\",\n  \"description\": \"60 min, system design.\",\n  \"channel\": \"video_call\",\n  \"newStatus\": \"interview\",\n  \"newStage\": \"tech_interview_1\",\n  \"occurredAt\": \"2026-05-09T16:00:00Z\",\n  \"metadata\": { \"interviewer\": \"Jane\" }\n}"
+            }
+          }
+        },
+        {
+          "name": "List events for application",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/applications/{{applicationId}}/events",
+              "host": ["{{baseUrl}}"],
+              "path": ["applications", "{{applicationId}}", "events"]
+            }
+          }
+        },
+        {
+          "name": "Get event by id",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/events/{{eventId}}", "host": ["{{baseUrl}}"], "path": ["events", "{{eventId}}"] }
+          }
+        },
+        {
+          "name": "Delete event",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/events/{{eventId}}", "host": ["{{baseUrl}}"], "path": ["events", "{{eventId}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Contacts",
+      "item": [
+        {
+          "name": "Create contact",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/contacts", "host": ["{{baseUrl}}"], "path": ["contacts"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Ada Lovelace\",\n  \"title\": \"Senior Recruiter\",\n  \"role\": \"recruiter\",\n  \"email\": \"ada@acme.com\",\n  \"phone\": \"+1 555 0123\",\n  \"linkedinUrl\": \"https://linkedin.com/in/ada\",\n  \"notes\": \"Met at conference X.\",\n  \"companyName\": \"Acme\"\n}"
+            }
+          }
+        },
+        {
+          "name": "List contacts",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/contacts?page=1&limit=25",
+              "host": ["{{baseUrl}}"],
+              "path": ["contacts"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "25" },
+                { "key": "search", "value": "", "disabled": true },
+                { "key": "role", "value": "recruiter", "disabled": true },
+                { "key": "companyName", "value": "Acme", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get contact",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/contacts/{{contactId}}", "host": ["{{baseUrl}}"], "path": ["contacts", "{{contactId}}"] }
+          }
+        },
+        {
+          "name": "Update contact",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/contacts/{{contactId}}", "host": ["{{baseUrl}}"], "path": ["contacts", "{{contactId}}"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Lead Recruiter\",\n  \"notes\": \"Reaches out via email.\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete contact",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/contacts/{{contactId}}", "host": ["{{baseUrl}}"], "path": ["contacts", "{{contactId}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Search sessions",
+      "item": [
+        {
+          "name": "Create search session",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/search-sessions", "host": ["{{baseUrl}}"], "path": ["search-sessions"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"platform\": \"linkedin\",\n  \"queryTitle\": \"Node.js Backend Engineer\",\n  \"filterDescription\": \"remote, last 7 days, USD\",\n  \"jobPostedFrom\": \"2026-05-01\",\n  \"searchedAt\": \"2026-05-06T15:00:00Z\",\n  \"resultsApproxCount\": 432,\n  \"isComplete\": false,\n  \"searchUrl\": \"https://www.linkedin.com/jobs/search?keywords=Node\",\n  \"notes\": \"Saved for follow-up.\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Create custom-platform search session",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/search-sessions", "host": ["{{baseUrl}}"], "path": ["search-sessions"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"platform\": \"other\",\n  \"platformOther\": \"Stack Overflow Jobs\",\n  \"queryTitle\": \"Backend Node.js\"\n}"
+            }
+          }
+        },
+        {
+          "name": "List search sessions",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/search-sessions?page=1&limit=25",
+              "host": ["{{baseUrl}}"],
+              "path": ["search-sessions"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "25" },
+                { "key": "search", "value": "", "disabled": true },
+                { "key": "platform", "value": "linkedin", "disabled": true },
+                { "key": "fromDate", "value": "2026-01-01", "disabled": true },
+                { "key": "toDate", "value": "2026-12-31", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get search session",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/search-sessions/{{searchSessionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["search-sessions", "{{searchSessionId}}"]
+            }
+          }
+        },
+        {
+          "name": "Update search session",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/search-sessions/{{searchSessionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["search-sessions", "{{searchSessionId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isComplete\": true,\n  \"notes\": \"Reviewed all results.\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete search session",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/search-sessions/{{searchSessionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["search-sessions", "{{searchSessionId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Templates",
+      "item": [
+        {
+          "name": "Create template",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/templates", "host": ["{{baseUrl}}"], "path": ["templates"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Generic cover letter - Backend (EN)\",\n  \"type\": \"cover_letter\",\n  \"subject\": \"Application for {{role}} at {{company}}\",\n  \"body\": \"Hi {{company}} team, …\",\n  \"language\": \"en\",\n  \"tags\": [\"backend\", \"cover_letter\"],\n  \"isFavorite\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "List templates",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/templates?page=1&limit=25",
+              "host": ["{{baseUrl}}"],
+              "path": ["templates"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "25" },
+                { "key": "search", "value": "", "disabled": true },
+                { "key": "type", "value": "cover_letter", "disabled": true },
+                { "key": "favoritesOnly", "value": "true", "disabled": true },
+                { "key": "language", "value": "en", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get template",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/templates/{{templateId}}", "host": ["{{baseUrl}}"], "path": ["templates", "{{templateId}}"] }
+          }
+        },
+        {
+          "name": "Update template",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/templates/{{templateId}}", "host": ["{{baseUrl}}"], "path": ["templates", "{{templateId}}"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"subject\": \"Application for {{role}}\",\n  \"tags\": [\"backend\", \"updated\"]\n}"
+            }
+          }
+        },
+        {
+          "name": "Toggle favorite",
+          "request": {
+            "method": "PATCH",
+            "url": {
+              "raw": "{{baseUrl}}/templates/{{templateId}}/favorite",
+              "host": ["{{baseUrl}}"],
+              "path": ["templates", "{{templateId}}", "favorite"]
+            }
+          }
+        },
+        {
+          "name": "Mark as used",
+          "request": {
+            "method": "PATCH",
+            "url": {
+              "raw": "{{baseUrl}}/templates/{{templateId}}/used",
+              "host": ["{{baseUrl}}"],
+              "path": ["templates", "{{templateId}}", "used"]
+            }
+          }
+        },
+        {
+          "name": "Delete template",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/templates/{{templateId}}", "host": ["{{baseUrl}}"], "path": ["templates", "{{templateId}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "item": [
+        {
+          "name": "Pipeline overview",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/dashboard",
+              "host": ["{{baseUrl}}"],
+              "path": ["dashboard"],
+              "query": [
+                { "key": "fromDate", "value": "2026-01-01", "disabled": true },
+                { "key": "toDate", "value": "2026-12-31", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Search activity overview",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/dashboard/search-activity",
+              "host": ["{{baseUrl}}"],
+              "path": ["dashboard", "search-activity"],
+              "query": [
+                { "key": "fromDate", "value": "2026-01-01", "disabled": true },
+                { "key": "toDate", "value": "2026-12-31", "disabled": true }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Platform settings",
+      "item": [
+        {
+          "name": "Get settings (creates default on first call)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/platform-settings", "host": ["{{baseUrl}}"], "path": ["platform-settings"] }
+          }
+        },
+        {
+          "name": "Update theme + appearance",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/platform-settings", "host": ["{{baseUrl}}"], "path": ["platform-settings"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"themeId\": \"emerald\",\n  \"appearanceMode\": \"dim\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Update form config (vocabulary)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/platform-settings", "host": ["{{baseUrl}}"], "path": ["platform-settings"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"formConfig\": {\n    \"customApplicationMethods\": [\"x_recruiter\"],\n    \"applicationMethodOrder\": [\n      \"linkedin_easy_apply\", \"email\", \"linkedin_external\", \"company_website\",\n      \"job_board\", \"referral\", \"recruiter_outreach\", \"other\", \"x_recruiter\"\n    ],\n    \"applicationMethodHidden\": [\"job_board\"],\n    \"workModeLabels\": { \"remote\": \"Fully remote\" },\n    \"roleTitleOptions\": [\"Junior\", \"SSR\", \"Senior\"],\n    \"resumeVersionOptions\": [\"English version\", \"Spanish version\"]\n  }\n}"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
