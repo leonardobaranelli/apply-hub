@@ -1,11 +1,24 @@
 import {
+  useCallback,
+  useEffect,
   useLayoutEffect,
   useMemo,
+  useRef,
   useState,
   type Dispatch,
   type SetStateAction,
 } from 'react';
-import { Check, ChevronDown, ChevronUp, Plus, Save, Trash2 } from 'lucide-react';
+import {
+  Check,
+  CheckCircle2,
+  ChevronDown,
+  ChevronUp,
+  CloudUpload,
+  Loader2,
+  Plus,
+  Save,
+  Trash2,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -262,7 +275,11 @@ export function SettingsPage() {
     ...DEFAULT_RESUME_VERSION_OPTIONS,
   ]);
 
+  const hasInitializedRef = useRef(false);
+
   useLayoutEffect(() => {
+    if (hasInitializedRef.current) return;
+
     const applied = getAppliedThemeSnapshot();
     setThemeDraft(applied.theme);
     setAppearanceDraft(applied.appearance);
@@ -344,12 +361,9 @@ export function SettingsPage() {
     setEmploymentSlugError('');
     setNewSearchPlatformSlug('');
     setSearchPlatformSlugError('');
-  }, [
-    settings?.id,
-    settings?.updatedAt,
-    settings?.themeId,
-    settings?.appearanceMode,
-  ]);
+
+    hasInitializedRef.current = true;
+  }, [settings]);
 
   const builtConfig = useMemo(
     () =>
@@ -448,19 +462,39 @@ export function SettingsPage() {
     });
   };
 
-  const handleSave = async (): Promise<void> => {
-    if (!settings) return;
-    try {
-      await updateSettings({
-        themeId: themeDraft,
-        appearanceMode: appearanceDraft,
-        formConfig: builtConfig,
-      });
-      toast.success('Settings saved');
-    } catch {
-      /* api interceptor */
-    }
-  };
+  const [lastAutoSavedAt, setLastAutoSavedAt] = useState<number | null>(null);
+
+  const persistDraft = useCallback(
+    async (showToast: boolean): Promise<void> => {
+      if (!settings) return;
+      try {
+        await updateSettings({
+          themeId: themeDraft,
+          appearanceMode: appearanceDraft,
+          formConfig: builtConfig,
+        });
+        setLastAutoSavedAt(Date.now());
+        if (showToast) toast.success('Settings saved');
+      } catch {
+        /* api interceptor */
+      }
+    },
+    [settings, themeDraft, appearanceDraft, builtConfig, updateSettings],
+  );
+
+  const handleSave = useCallback(
+    () => persistDraft(true),
+    [persistDraft],
+  );
+
+  useEffect(() => {
+    if (!hasInitializedRef.current) return;
+    if (!settings || !isDirty || isUpdating) return;
+    const t = window.setTimeout(() => {
+      void persistDraft(false);
+    }, 700);
+    return () => window.clearTimeout(t);
+  }, [isDirty, isUpdating, settings, persistDraft]);
 
   const selectTheme = (id: ThemePresetId): void => {
     setThemeDraft(id);
@@ -882,7 +916,29 @@ export function SettingsPage() {
           </CardContent>
         </Card>
 
-        <div className="flex justify-end">
+        <div className="flex flex-wrap items-center justify-end gap-3">
+          <span
+            className="text-xs text-muted-foreground"
+            aria-live="polite"
+            role="status"
+          >
+            {isUpdating ? (
+              <span className="inline-flex items-center gap-1.5">
+                <Loader2 size={14} className="animate-spin" />
+                Saving…
+              </span>
+            ) : isDirty ? (
+              <span className="inline-flex items-center gap-1.5 text-amber-600 dark:text-amber-400">
+                <CloudUpload size={14} />
+                Unsaved changes
+              </span>
+            ) : lastAutoSavedAt ? (
+              <span className="inline-flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
+                <CheckCircle2 size={14} />
+                All changes saved
+              </span>
+            ) : null}
+          </span>
           <Button
             onClick={() => void handleSave()}
             loading={isUpdating}
