@@ -196,6 +196,7 @@ model JobApplication {
   companyName       String             @map("company_name") @db.VarChar(200)
   companyUrl        String?            @map("company_url") @db.VarChar(500)
   roleTitle         String             @map("role_title") @db.VarChar(250)
+  jobTitle          String             @default("") @map("job_title") @db.VarChar(250)
   position          String             @default("backend") @map("position") @db.VarChar(48)
   jobDescription    String?            @map("job_description") @db.Text
   jobUrl            String?            @map("job_url") @db.VarChar(500)

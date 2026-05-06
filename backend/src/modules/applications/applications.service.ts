@@ -63,6 +63,7 @@ export class ApplicationsService {
           companyName: dto.companyName.trim(),
           companyUrl: dto.companyUrl ?? null,
           roleTitle: dto.roleTitle,
+          jobTitle: dto.jobTitle.trim(),
           position: dto.position,
           jobDescription: dto.jobDescription ?? null,
           jobUrl: dto.jobUrl ?? null,
@@ -150,6 +151,7 @@ export class ApplicationsService {
     if (search) {
       where.OR = [
         { roleTitle: { contains: search, mode: 'insensitive' } },
+        { jobTitle: { contains: search, mode: 'insensitive' } },
         { companyName: { contains: search, mode: 'insensitive' } },
         { notes: { contains: search, mode: 'insensitive' } },
         { location: { contains: search, mode: 'insensitive' } },
@@ -263,6 +265,7 @@ export class ApplicationsService {
     if (dto.companyName !== undefined) data.companyName = dto.companyName.trim();
     if (dto.companyUrl !== undefined) data.companyUrl = dto.companyUrl;
     if (dto.roleTitle !== undefined) data.roleTitle = dto.roleTitle;
+    if (dto.jobTitle !== undefined) data.jobTitle = dto.jobTitle.trim();
     if (dto.position !== undefined) data.position = dto.position;
     if (dto.jobDescription !== undefined) data.jobDescription = dto.jobDescription;
     if (dto.jobUrl !== undefined) data.jobUrl = dto.jobUrl;
