@@ -342,8 +342,11 @@ Lightweight, dependency-free implementations:
 | `EmptyState` | Icon + title + description + optional action (e.g. "No applications yet"). |
 | `Spinner`, `PageLoader` | Indeterminate loaders. |
 
-`StatusBadge` (`components/status/`) maps `ApplicationStatus` to a color
-pulled from CSS custom properties so it re-skins per theme.
+`StatusBadge` (`components/status/`) maps a status id (built-in or
+custom) to a color pulled from CSS custom properties so it re-skins per
+theme; the displayed label is resolved through
+`usePlatformSettings().effectiveStatusLabels`, so users see the configured
+label.
 
 `components/dashboard/`:
 

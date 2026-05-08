@@ -20,6 +20,8 @@ import { buildOrderedSelectOptions, mergeLabelRecord } from '@/lib/form-select-o
 import type { AppearanceMode, ThemePresetId } from '@/lib/theme-presets';
 import {
   ApplicationMethod,
+  ApplicationStage,
+  ApplicationStatus,
   EmploymentType,
   PositionType,
   SearchPlatform,
@@ -30,6 +32,8 @@ import {
   methodLabels,
   positionLabels,
   searchPlatformLabels,
+  stageLabels,
+  statusLabels,
   workModeLabels,
 } from '@/types/labels';
 import type { PlatformFormConfig, PlatformSettingsDto } from '@/types/platform-settings';
@@ -46,11 +50,15 @@ type Ctx = {
   effectivePositionLabels: Record<string, string>;
   effectiveEmploymentLabels: Record<string, string>;
   effectiveSearchPlatformLabels: Record<string, string>;
+  effectiveStatusLabels: Record<string, string>;
+  effectiveStageLabels: Record<string, string>;
   methodSelectOptions: SelectOpt[];
   workModeSelectOptions: SelectOpt[];
   positionSelectOptions: SelectOpt[];
   employmentSelectOptions: SelectOpt[];
   searchPlatformSelectOptions: SelectOpt[];
+  statusSelectOptions: SelectOpt[];
+  stageSelectOptions: SelectOpt[];
   roleTitleOptions: string[];
   resumeVersionOptions: string[];
   updateSettings: (input: UpdatePlatformSettingsInput) => Promise<PlatformSettingsDto>;
@@ -94,6 +102,16 @@ export function PlatformSettingsProvider({ children }: { children: ReactNode }) 
     return mergeLabelRecord(base, formConfig?.searchPlatformLabels);
   }, [formConfig?.searchPlatformLabels]);
 
+  const effectiveStatusLabels = useMemo(() => {
+    const base: Record<string, string> = { ...statusLabels };
+    return mergeLabelRecord(base, formConfig?.applicationStatusLabels);
+  }, [formConfig?.applicationStatusLabels]);
+
+  const effectiveStageLabels = useMemo(() => {
+    const base: Record<string, string> = { ...stageLabels };
+    return mergeLabelRecord(base, formConfig?.applicationStageLabels);
+  }, [formConfig?.applicationStageLabels]);
+
   const methodSelectOptions = useMemo(
     () =>
       buildOrderedSelectOptions(
@@ -115,12 +133,17 @@ export function PlatformSettingsProvider({ children }: { children: ReactNode }) 
     () =>
       buildOrderedSelectOptions(
         Object.values(WorkMode),
-        [],
+        formConfig?.customWorkModes,
         effectiveWorkModeLabels,
-        undefined,
-        undefined,
+        formConfig?.workModeOrder,
+        formConfig?.workModeHidden,
       ),
-    [effectiveWorkModeLabels],
+    [
+      effectiveWorkModeLabels,
+      formConfig?.workModeOrder,
+      formConfig?.workModeHidden,
+      formConfig?.customWorkModes,
+    ],
   );
 
   const positionSelectOptions = useMemo(
@@ -174,6 +197,40 @@ export function PlatformSettingsProvider({ children }: { children: ReactNode }) 
     ],
   );
 
+  const statusSelectOptions = useMemo(
+    () =>
+      buildOrderedSelectOptions(
+        Object.values(ApplicationStatus),
+        formConfig?.customApplicationStatuses,
+        effectiveStatusLabels,
+        formConfig?.applicationStatusOrder,
+        formConfig?.applicationStatusHidden,
+      ),
+    [
+      effectiveStatusLabels,
+      formConfig?.applicationStatusOrder,
+      formConfig?.applicationStatusHidden,
+      formConfig?.customApplicationStatuses,
+    ],
+  );
+
+  const stageSelectOptions = useMemo(
+    () =>
+      buildOrderedSelectOptions(
+        Object.values(ApplicationStage),
+        formConfig?.customApplicationStages,
+        effectiveStageLabels,
+        formConfig?.applicationStageOrder,
+        formConfig?.applicationStageHidden,
+      ),
+    [
+      effectiveStageLabels,
+      formConfig?.applicationStageOrder,
+      formConfig?.applicationStageHidden,
+      formConfig?.customApplicationStages,
+    ],
+  );
+
   const roleTitleOptions = useMemo(
     () =>
       formConfig?.roleTitleOptions?.length
@@ -221,11 +278,15 @@ export function PlatformSettingsProvider({ children }: { children: ReactNode }) 
       effectivePositionLabels,
       effectiveEmploymentLabels,
       effectiveSearchPlatformLabels,
+      effectiveStatusLabels,
+      effectiveStageLabels,
       methodSelectOptions,
       workModeSelectOptions,
       positionSelectOptions,
       employmentSelectOptions,
       searchPlatformSelectOptions,
+      statusSelectOptions,
+      stageSelectOptions,
       roleTitleOptions,
       resumeVersionOptions,
       updateSettings,
@@ -239,11 +300,15 @@ export function PlatformSettingsProvider({ children }: { children: ReactNode }) 
       effectivePositionLabels,
       effectiveEmploymentLabels,
       effectiveSearchPlatformLabels,
+      effectiveStatusLabels,
+      effectiveStageLabels,
       methodSelectOptions,
       workModeSelectOptions,
       positionSelectOptions,
       employmentSelectOptions,
       searchPlatformSelectOptions,
+      statusSelectOptions,
+      stageSelectOptions,
       roleTitleOptions,
       resumeVersionOptions,
       updateSettings,

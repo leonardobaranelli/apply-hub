@@ -5,7 +5,6 @@ import {
   ACTIVE_STATUSES,
   ApplicationStatus,
   FUNNEL_ORDER,
-  WorkMode,
   funnelIndex,
 } from '../applications/domain/application.enums';
 import { DashboardQueryDto } from './dto/dashboard-query.dto';
@@ -49,10 +48,10 @@ export class DashboardService {
     const apps = await this.fetchApplications(query);
 
     const kpis = this.computeKpis(apps);
-    const byStatus = this.distribution(apps, (a) => a.status as ApplicationStatus);
+    const byStatus = this.distribution(apps, (a) => a.status);
     const byPosition = this.distribution(apps, (a) => a.position);
     const byMethod = this.distribution(apps, (a) => a.applicationMethod);
-    const byWorkMode = this.distribution(apps, (a) => a.workMode as WorkMode);
+    const byWorkMode = this.distribution(apps, (a) => a.workMode);
     const funnel = this.computeFunnel(apps);
     const applicationsPerDay = this.computeTimeSeries(apps);
     const activityHeatmap = await this.computeHeatmap(query);
@@ -62,10 +61,10 @@ export class DashboardService {
 
     return {
       kpis,
-      byStatus: byStatus as DistributionItem<ApplicationStatus>[],
-      byPosition: byPosition as DistributionItem<string>[],
-      byMethod: byMethod as DistributionItem<string>[],
-      byWorkMode: byWorkMode as DistributionItem<WorkMode>[],
+      byStatus,
+      byPosition,
+      byMethod,
+      byWorkMode,
       funnel,
       applicationsPerDay,
       activityHeatmap,

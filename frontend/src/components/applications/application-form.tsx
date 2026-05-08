@@ -65,7 +65,7 @@ const schema = z.object({
   applicationDate: z.string().min(1, 'Date is required'),
   vacancyPostedDate: z.string().min(1, 'Date is required'),
   applicationMethod: z.string().min(1, 'Application method is required'),
-  workMode: z.nativeEnum(WorkMode),
+  workMode: z.string().min(1, 'Work mode is required'),
   employmentType: z.string().optional().or(z.literal('')),
   jobUrl: z.string().optional().or(z.literal('')),
   location: z.string().optional(),

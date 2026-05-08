@@ -2,6 +2,7 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsArray, IsObject, IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class FormConfigDto {
+  // ── Application method ─────────────────────────────────────────────
   @ApiPropertyOptional({ type: [String] })
   @IsOptional()
   @IsArray()
@@ -28,6 +29,13 @@ export class FormConfigDto {
   @IsString({ each: true })
   applicationMethodHidden?: string[];
 
+  // ── Work mode ──────────────────────────────────────────────────────
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  customWorkModes?: string[];
+
   @ApiPropertyOptional({
     type: 'object',
     additionalProperties: { type: 'string' },
@@ -36,6 +44,19 @@ export class FormConfigDto {
   @IsObject()
   workModeLabels?: Record<string, string>;
 
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  workModeOrder?: string[];
+
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  workModeHidden?: string[];
+
+  // ── Position ───────────────────────────────────────────────────────
   @ApiPropertyOptional({ type: [String] })
   @IsOptional()
   @IsArray()
@@ -62,6 +83,7 @@ export class FormConfigDto {
   @IsString({ each: true })
   positionHidden?: string[];
 
+  // ── Employment type ────────────────────────────────────────────────
   @ApiPropertyOptional({ type: [String] })
   @IsOptional()
   @IsArray()
@@ -88,6 +110,7 @@ export class FormConfigDto {
   @IsString({ each: true })
   employmentHidden?: string[];
 
+  // ── Search platform ────────────────────────────────────────────────
   @ApiPropertyOptional({ type: [String] })
   @IsOptional()
   @IsArray()
@@ -114,6 +137,61 @@ export class FormConfigDto {
   @IsString({ each: true })
   searchPlatformHidden?: string[];
 
+  // ── Application status ─────────────────────────────────────────────
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  customApplicationStatuses?: string[];
+
+  @ApiPropertyOptional({
+    type: 'object',
+    additionalProperties: { type: 'string' },
+  })
+  @IsOptional()
+  @IsObject()
+  applicationStatusLabels?: Record<string, string>;
+
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  applicationStatusOrder?: string[];
+
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  applicationStatusHidden?: string[];
+
+  // ── Application stage ──────────────────────────────────────────────
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  customApplicationStages?: string[];
+
+  @ApiPropertyOptional({
+    type: 'object',
+    additionalProperties: { type: 'string' },
+  })
+  @IsOptional()
+  @IsObject()
+  applicationStageLabels?: Record<string, string>;
+
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  applicationStageOrder?: string[];
+
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  applicationStageHidden?: string[];
+
+  // ── Free-text option lists ─────────────────────────────────────────
   @ApiPropertyOptional({ type: [String] })
   @IsOptional()
   @IsArray()

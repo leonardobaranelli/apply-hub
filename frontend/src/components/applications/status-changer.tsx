@@ -5,17 +5,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { usePlatformSettings } from '@/context/platform-settings-context';
 import { useChangeStatus } from '@/hooks/use-applications';
-import {
-  ApplicationStage,
-  ApplicationStatus,
-  EventChannel,
-} from '@/types/enums';
-import {
-  channelLabels,
-  stageLabels,
-  statusLabels,
-} from '@/types/labels';
+import { EventChannel } from '@/types/enums';
+import { channelLabels } from '@/types/labels';
 
 const enumOpts = <T extends Record<string, string>>(
   enumLike: T,
@@ -25,8 +18,8 @@ const enumOpts = <T extends Record<string, string>>(
 
 interface Props {
   applicationId: string;
-  currentStatus: ApplicationStatus;
-  currentStage: ApplicationStage;
+  currentStatus: string;
+  currentStage: string;
 }
 
 export function StatusChanger({
@@ -34,8 +27,9 @@ export function StatusChanger({
   currentStatus,
   currentStage,
 }: Props) {
-  const [status, setStatus] = useState<ApplicationStatus>(currentStatus);
-  const [stage, setStage] = useState<ApplicationStage>(currentStage);
+  const { statusSelectOptions, stageSelectOptions } = usePlatformSettings();
+  const [status, setStatus] = useState<string>(currentStatus);
+  const [stage, setStage] = useState<string>(currentStage);
   const [channel, setChannel] = useState<EventChannel | ''>('');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -65,16 +59,16 @@ export function StatusChanger({
             <Label className="mb-1 block">Status</Label>
             <Select
               value={status}
-              onChange={(e) => setStatus(e.target.value as ApplicationStatus)}
-              options={enumOpts(ApplicationStatus, statusLabels)}
+              onChange={(e) => setStatus(e.target.value)}
+              options={statusSelectOptions}
             />
           </div>
           <div>
             <Label className="mb-1 block">Stage</Label>
             <Select
               value={stage}
-              onChange={(e) => setStage(e.target.value as ApplicationStage)}
-              options={enumOpts(ApplicationStage, stageLabels)}
+              onChange={(e) => setStage(e.target.value)}
+              options={stageSelectOptions}
             />
           </div>
           <div>

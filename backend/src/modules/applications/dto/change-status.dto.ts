@@ -8,20 +8,24 @@ import {
   MaxLength,
 } from 'class-validator';
 import { EventChannel } from '../../application-events/domain/event.enums';
-import {
-  ApplicationStage,
-  ApplicationStatus,
-} from '../domain/application.enums';
 
 export class ChangeStatusDto {
-  @ApiProperty({ enum: ApplicationStatus })
-  @IsEnum(ApplicationStatus)
-  status!: ApplicationStatus;
+  @ApiProperty({
+    description:
+      'Built-in or custom application status id from platform settings',
+  })
+  @IsString()
+  @MaxLength(48)
+  status!: string;
 
-  @ApiPropertyOptional({ enum: ApplicationStage })
+  @ApiPropertyOptional({
+    description:
+      'Built-in or custom application stage id from platform settings',
+  })
   @IsOptional()
-  @IsEnum(ApplicationStage)
-  stage?: ApplicationStage;
+  @IsString()
+  @MaxLength(48)
+  stage?: string;
 
   @ApiPropertyOptional()
   @IsOptional()

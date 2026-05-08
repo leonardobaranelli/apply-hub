@@ -17,74 +17,13 @@ datasource db {
 // ─────────────────────────────────────────────────────────────────────
 //  Enums
 // ─────────────────────────────────────────────────────────────────────
-enum PositionType {
-  backend
-  fullstack
-  ai_developer
-}
-
-enum ApplicationMethod {
-  email
-  linkedin_easy_apply
-  linkedin_external
-  company_website
-  job_board
-  referral
-  recruiter_outreach
-  other
-}
-
-enum WorkMode {
-  remote
-  hybrid
-  onsite
-  unknown
-}
-
-enum EmploymentType {
-  full_time
-  part_time
-  contract
-  internship
-  freelance
-}
-
-enum ApplicationStatus {
-  applied
-  acknowledged
-  screening
-  assessment
-  interview
-  offer
-  negotiating
-  accepted
-  rejected
-  withdrawn
-  ghosted
-  on_hold
-}
-
-enum ApplicationStage {
-  submitted
-  auto_reply
-  recruiter_screen
-  hiring_manager_screen
-  take_home
-  live_coding
-  tech_interview_1
-  tech_interview_2
-  system_design
-  behavioral
-  culture_fit
-  team_match
-  final_round
-  reference_check
-  offer_received
-  offer_negotiation
-  offer_accepted
-  offer_declined
-  closed
-}
+//
+// `PositionType`, `ApplicationMethod`, `WorkMode`, `EmploymentType`,
+// `ApplicationStatus`, `ApplicationStage` and `SearchPlatform` are
+// **NOT** native PostgreSQL enums — the corresponding columns are
+// VARCHAR so users can extend the vocabulary at runtime via
+// `PlatformSettings.formConfig.custom*`. The TypeScript enums in
+// `backend/src/modules/.../domain/*.enums.ts` define the built-in IDs.
 
 enum Priority {
   low
@@ -156,18 +95,6 @@ enum EventChannel {
   other
 }
 
-/// Where you ran the search (LinkedIn, Google, etc.).
-enum SearchPlatform {
-  linkedin
-  google
-  indeed
-  glassdoor
-  job_board
-  company_site
-  recruiter_portal
-  other
-}
-
 // ─────────────────────────────────────────────────────────────────────
 //  Models
 // ─────────────────────────────────────────────────────────────────────
@@ -201,7 +128,7 @@ model JobApplication {
   jobDescription    String?            @map("job_description") @db.Text
   jobUrl            String?            @map("job_url") @db.VarChar(500)
   location          String?            @db.VarChar(200)
-  workMode          WorkMode           @default(unknown) @map("work_mode")
+  workMode          String             @default("unknown") @map("work_mode") @db.VarChar(32)
   employmentType    String?            @map("employment_type") @db.VarChar(48)
   applicationDate   DateTime           @map("application_date") @db.Date
   vacancyPostedDate DateTime           @default(now()) @map("vacancy_posted_date") @db.Date
@@ -212,8 +139,8 @@ model JobApplication {
   salaryMax         Decimal?           @map("salary_max") @db.Decimal(12, 2)
   currency          String?            @db.VarChar(10)
   salaryPeriod      String?            @map("salary_period") @db.VarChar(20)
-  status            ApplicationStatus  @default(applied)
-  stage             ApplicationStage   @default(submitted)
+  status            String             @default("applied") @db.VarChar(48)
+  stage             String             @default("submitted") @db.VarChar(48)
   priority          Priority           @default(medium)
   tags              String[]           @default([])
   notes             String?            @db.Text
@@ -276,8 +203,8 @@ model ApplicationEvent {
   applicationId String                @map("application_id") @db.Uuid
   application   JobApplication        @relation(fields: [applicationId], references: [id], onDelete: Cascade)
   type          ApplicationEventType
-  newStatus     ApplicationStatus?    @map("new_status")
-  newStage      ApplicationStage?     @map("new_stage")
+  newStatus     String?               @map("new_status") @db.VarChar(48)
+  newStage      String?               @map("new_stage") @db.VarChar(48)
   channel       EventChannel?
   title         String                @db.VarChar(250)
   description   String?               @db.Text

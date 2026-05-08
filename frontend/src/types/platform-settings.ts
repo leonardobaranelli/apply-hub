@@ -3,7 +3,11 @@ export interface PlatformFormConfig {
   applicationMethodLabels?: Partial<Record<string, string>>;
   applicationMethodOrder?: string[];
   applicationMethodHidden?: string[];
+
+  customWorkModes?: string[];
   workModeLabels?: Partial<Record<string, string>>;
+  workModeOrder?: string[];
+  workModeHidden?: string[];
 
   customPositionTypes?: string[];
   positionLabels?: Partial<Record<string, string>>;
@@ -19,6 +23,16 @@ export interface PlatformFormConfig {
   searchPlatformLabels?: Partial<Record<string, string>>;
   searchPlatformOrder?: string[];
   searchPlatformHidden?: string[];
+
+  customApplicationStatuses?: string[];
+  applicationStatusLabels?: Partial<Record<string, string>>;
+  applicationStatusOrder?: string[];
+  applicationStatusHidden?: string[];
+
+  customApplicationStages?: string[];
+  applicationStageLabels?: Partial<Record<string, string>>;
+  applicationStageOrder?: string[];
+  applicationStageHidden?: string[];
 
   roleTitleOptions?: string[];
   resumeVersionOptions?: string[];
