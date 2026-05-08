@@ -2,6 +2,7 @@ export enum PositionType {
   BACKEND = 'backend',
   FULLSTACK = 'fullstack',
   AI_DEVELOPER = 'ai_developer',
+  OTHER = 'other',
 }
 
 export enum ApplicationMethod {
@@ -20,6 +21,7 @@ export enum WorkMode {
   HYBRID = 'hybrid',
   ONSITE = 'onsite',
   UNKNOWN = 'unknown',
+  OTHER = 'other',
 }
 
 export enum EmploymentType {
@@ -28,11 +30,13 @@ export enum EmploymentType {
   CONTRACT = 'contract',
   INTERNSHIP = 'internship',
   FREELANCE = 'freelance',
+  OTHER = 'other',
 }
 
 /**
  * Macro status of the pipeline. Defines the main phase the application
- * is currently in.
+ * is currently in. Persisted as VARCHAR so users can extend the
+ * vocabulary from Settings (`formConfig.customApplicationStatuses`).
  */
 export enum ApplicationStatus {
   APPLIED = 'applied',
@@ -47,11 +51,13 @@ export enum ApplicationStatus {
   WITHDRAWN = 'withdrawn',
   GHOSTED = 'ghosted',
   ON_HOLD = 'on_hold',
+  OTHER = 'other',
 }
 
 /**
- * Granular stage within the macro status. Allows distinguishing between
- * different interview rounds, for example.
+ * Granular stage within the macro status. Persisted as VARCHAR so
+ * users can extend the vocabulary from Settings
+ * (`formConfig.customApplicationStages`).
  */
 export enum ApplicationStage {
   SUBMITTED = 'submitted',
@@ -59,20 +65,16 @@ export enum ApplicationStage {
   RECRUITER_SCREEN = 'recruiter_screen',
   HIRING_MANAGER_SCREEN = 'hiring_manager_screen',
   TAKE_HOME = 'take_home',
-  LIVE_CODING = 'live_coding',
   TECH_INTERVIEW_1 = 'tech_interview_1',
   TECH_INTERVIEW_2 = 'tech_interview_2',
-  SYSTEM_DESIGN = 'system_design',
   BEHAVIORAL = 'behavioral',
   CULTURE_FIT = 'culture_fit',
-  TEAM_MATCH = 'team_match',
-  FINAL_ROUND = 'final_round',
-  REFERENCE_CHECK = 'reference_check',
   OFFER_RECEIVED = 'offer_received',
   OFFER_NEGOTIATION = 'offer_negotiation',
   OFFER_ACCEPTED = 'offer_accepted',
   OFFER_DECLINED = 'offer_declined',
   CLOSED = 'closed',
+  OTHER = 'other',
 }
 
 export enum Priority {
@@ -119,11 +121,11 @@ export const FUNNEL_ORDER: readonly ApplicationStatus[] = [
   ApplicationStatus.ACCEPTED,
 ];
 
-export const isActiveStatus = (status: ApplicationStatus): boolean =>
-  ACTIVE_STATUSES.has(status);
+export const isActiveStatus = (status: string): boolean =>
+  ACTIVE_STATUSES.has(status as ApplicationStatus);
 
-export const isTerminalStatus = (status: ApplicationStatus): boolean =>
-  TERMINAL_STATUSES.has(status);
+export const isTerminalStatus = (status: string): boolean =>
+  TERMINAL_STATUSES.has(status as ApplicationStatus);
 
-export const funnelIndex = (status: ApplicationStatus): number =>
-  FUNNEL_ORDER.indexOf(status);
+export const funnelIndex = (status: string): number =>
+  FUNNEL_ORDER.indexOf(status as ApplicationStatus);

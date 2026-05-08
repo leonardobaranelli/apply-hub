@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { PlatformSettings, WorkMode } from '@prisma/client';
+import { PlatformSettings } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { FormConfigDto } from './dto/form-config.dto';
 import { UpdatePlatformSettingsDto } from './dto/update-platform-settings.dto';
@@ -12,6 +12,10 @@ import {
   allMethodIds,
   allPositionIds,
   allSearchPlatformIds,
+  allStageIds,
+  allStatusIds,
+  allWorkModeIds,
+  assertAtLeastOneVisible,
   assertCustomSlugs,
   assertFullPermutation,
   assertLabelKeys,
@@ -20,11 +24,12 @@ import {
   BUILTIN_METHOD_IDS,
   BUILTIN_POSITION_IDS,
   BUILTIN_SEARCH_PLATFORM_IDS,
+  BUILTIN_STAGE_IDS,
+  BUILTIN_STATUS_IDS,
+  BUILTIN_WORK_MODE_IDS,
 } from './domain/form-config.helpers';
 
 const SETTINGS_ID = 'default';
-
-const WORK_MODE_VALUES = new Set<string>(Object.values(WorkMode));
 
 @Injectable()
 export class PlatformSettingsService {
@@ -75,96 +80,90 @@ export class PlatformSettingsService {
   }
 
   private assertValidFormConfig(config: FormConfigDto): void {
-    assertCustomSlugs(
-      config.customApplicationMethods,
-      BUILTIN_METHOD_IDS,
-      'customApplicationMethods',
-    );
-    assertCustomSlugs(
-      config.customPositionTypes,
-      BUILTIN_POSITION_IDS,
-      'customPositionTypes',
-    );
-    assertCustomSlugs(
-      config.customEmploymentTypes,
-      BUILTIN_EMPLOYMENT_IDS,
-      'customEmploymentTypes',
-    );
-    assertCustomSlugs(
-      config.customSearchPlatforms,
-      BUILTIN_SEARCH_PLATFORM_IDS,
-      'customSearchPlatforms',
-    );
-
-    const methodUniverse = allMethodIds(config);
-    assertLabelKeys(
-      config.applicationMethodLabels,
-      methodUniverse,
-      'applicationMethodLabels',
-    );
-    assertFullPermutation(
-      config.applicationMethodOrder,
-      methodUniverse,
-      'applicationMethodOrder',
-    );
-    assertSubset(
-      config.applicationMethodHidden,
-      methodUniverse,
-      'applicationMethodHidden',
-    );
-
-    if (config.workModeLabels) {
-      for (const key of Object.keys(config.workModeLabels)) {
-        if (!WORK_MODE_VALUES.has(key)) {
-          throw new BadRequestException(
-            `Invalid workModeLabels key: ${key}`,
-          );
-        }
-      }
-    }
-
-    const posUniverse = allPositionIds(config);
-    assertLabelKeys(config.positionLabels, posUniverse, 'positionLabels');
-    assertFullPermutation(
-      config.positionOrder,
-      posUniverse,
-      'positionOrder',
-    );
-    assertSubset(config.positionHidden, posUniverse, 'positionHidden');
-
-    const empUniverse = allEmploymentIds(config);
-    assertLabelKeys(
-      config.employmentLabels,
-      empUniverse,
-      'employmentLabels',
-    );
-    assertFullPermutation(
-      config.employmentOrder,
-      empUniverse,
-      'employmentOrder',
-    );
-    assertSubset(
-      config.employmentHidden,
-      empUniverse,
-      'employmentHidden',
-    );
-
-    const platUniverse = allSearchPlatformIds(config);
-    assertLabelKeys(
-      config.searchPlatformLabels,
-      platUniverse,
-      'searchPlatformLabels',
-    );
-    assertFullPermutation(
-      config.searchPlatformOrder,
-      platUniverse,
-      'searchPlatformOrder',
-    );
-    assertSubset(
-      config.searchPlatformHidden,
-      platUniverse,
-      'searchPlatformHidden',
-    );
+    this.validateGroup({
+      custom: config.customApplicationMethods,
+      labels: config.applicationMethodLabels,
+      order: config.applicationMethodOrder,
+      hidden: config.applicationMethodHidden,
+      builtIn: BUILTIN_METHOD_IDS,
+      universe: allMethodIds(config),
+      customField: 'customApplicationMethods',
+      labelsField: 'applicationMethodLabels',
+      orderField: 'applicationMethodOrder',
+      hiddenField: 'applicationMethodHidden',
+    });
+    this.validateGroup({
+      custom: config.customWorkModes,
+      labels: config.workModeLabels,
+      order: config.workModeOrder,
+      hidden: config.workModeHidden,
+      builtIn: BUILTIN_WORK_MODE_IDS,
+      universe: allWorkModeIds(config),
+      customField: 'customWorkModes',
+      labelsField: 'workModeLabels',
+      orderField: 'workModeOrder',
+      hiddenField: 'workModeHidden',
+    });
+    this.validateGroup({
+      custom: config.customPositionTypes,
+      labels: config.positionLabels,
+      order: config.positionOrder,
+      hidden: config.positionHidden,
+      builtIn: BUILTIN_POSITION_IDS,
+      universe: allPositionIds(config),
+      customField: 'customPositionTypes',
+      labelsField: 'positionLabels',
+      orderField: 'positionOrder',
+      hiddenField: 'positionHidden',
+    });
+    this.validateGroup({
+      custom: config.customEmploymentTypes,
+      labels: config.employmentLabels,
+      order: config.employmentOrder,
+      hidden: config.employmentHidden,
+      builtIn: BUILTIN_EMPLOYMENT_IDS,
+      universe: allEmploymentIds(config),
+      customField: 'customEmploymentTypes',
+      labelsField: 'employmentLabels',
+      orderField: 'employmentOrder',
+      hiddenField: 'employmentHidden',
+    });
+    this.validateGroup({
+      custom: config.customSearchPlatforms,
+      labels: config.searchPlatformLabels,
+      order: config.searchPlatformOrder,
+      hidden: config.searchPlatformHidden,
+      builtIn: BUILTIN_SEARCH_PLATFORM_IDS,
+      universe: allSearchPlatformIds(config),
+      customField: 'customSearchPlatforms',
+      labelsField: 'searchPlatformLabels',
+      orderField: 'searchPlatformOrder',
+      hiddenField: 'searchPlatformHidden',
+    });
+    this.validateGroup({
+      custom: config.customApplicationStatuses,
+      labels: config.applicationStatusLabels,
+      order: config.applicationStatusOrder,
+      hidden: config.applicationStatusHidden,
+      builtIn: BUILTIN_STATUS_IDS,
+      universe: allStatusIds(config),
+      customField: 'customApplicationStatuses',
+      labelsField: 'applicationStatusLabels',
+      orderField: 'applicationStatusOrder',
+      hiddenField: 'applicationStatusHidden',
+    });
+    this.validateGroup({
+      custom: config.customApplicationStages,
+      labels: config.applicationStageLabels,
+      order: config.applicationStageOrder,
+      hidden: config.applicationStageHidden,
+      builtIn: BUILTIN_STAGE_IDS,
+      universe: allStageIds(config),
+      customField: 'customApplicationStages',
+      labelsField: 'applicationStageLabels',
+      orderField: 'applicationStageOrder',
+      hiddenField: 'applicationStageHidden',
+    });
 
     if (config.roleTitleOptions !== undefined) {
       if (config.roleTitleOptions.length > 80) {
@@ -176,5 +175,24 @@ export class PlatformSettingsService {
         throw new BadRequestException('resumeVersionOptions: at most 40 entries');
       }
     }
+  }
+
+  private validateGroup(spec: {
+    custom: string[] | undefined;
+    labels: Record<string, string> | undefined;
+    order: string[] | undefined;
+    hidden: string[] | undefined;
+    builtIn: Set<string>;
+    universe: Set<string>;
+    customField: string;
+    labelsField: string;
+    orderField: string;
+    hiddenField: string;
+  }): void {
+    assertCustomSlugs(spec.custom, spec.builtIn, spec.customField);
+    assertLabelKeys(spec.labels, spec.universe, spec.labelsField);
+    assertFullPermutation(spec.order, spec.universe, spec.orderField);
+    assertSubset(spec.hidden, spec.universe, spec.hiddenField);
+    assertAtLeastOneVisible(spec.hidden, spec.universe, spec.hiddenField);
   }
 }

@@ -170,6 +170,27 @@ These commands assume:
 The snapshot drops & recreates objects on the destination
 (`--clean --if-exists`).
 
+### JSON snapshots (schema-aware)
+
+For migrations that change the **shape** of the data (renamed columns,
+removed fields, new required columns with defaults) the safest path is a
+schema-aware JSON dump that gets replayed through Prisma:
+
+```bash
+# 1) Dump the primary into JSON (output: backend/scripts/db-snapshot/snapshots/*.json)
+cd backend && npm run db:snapshot:export
+
+# 2) Apply the new schema
+npm run prisma:db:push
+
+# 3) Replay the JSON into the new schema. Unknown columns are dropped,
+#    new required columns fall back to schema defaults.
+npm run db:snapshot:import -- --in scripts/db-snapshot/snapshots/<file>.json
+# or --mode replace to truncate first, --dry-run to validate only.
+```
+
+Sources: `backend/scripts/db-snapshot/{export,import}-database.mjs`.
+
 ### Reads from the replica
 
 The replica is **never** read by the running backend. To read from it
@@ -271,6 +292,8 @@ operator with `docker compose logs` and `npm run db:status`.
 | Force full snapshot local → replica | `cd backend && npm run db:sync:local-to-replica` |
 | Force full snapshot replica → local | `cd backend && npm run db:sync:replica-to-local` |
 | Run a custom command against the replica | `cd backend && node scripts/run-on-replica.mjs <cmd>` |
+| Dump the local DB to JSON | `cd backend && npm run db:snapshot:export` |
+| Replay a JSON snapshot back into the local DB | `cd backend && npm run db:snapshot:import -- --in scripts/db-snapshot/snapshots/<file>.json` |
 
 ---
 

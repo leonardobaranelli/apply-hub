@@ -10,6 +10,9 @@ import {
   allEmploymentIds,
   allMethodIds,
   allPositionIds,
+  allStageIds,
+  allStatusIds,
+  allWorkModeIds,
 } from '../platform-settings/domain/form-config.helpers';
 import type { FormConfigDto } from '../platform-settings/dto/form-config.dto';
 import { PlatformSettingsService } from '../platform-settings/platform-settings.service';
@@ -42,6 +45,9 @@ export class ApplicationsService {
       applicationMethod: dto.applicationMethod ?? 'linkedin_easy_apply',
       position: dto.position ?? 'backend',
       employmentType: dto.employmentType ?? null,
+      workMode: dto.workMode,
+      status: dto.status,
+      stage: dto.stage,
     });
 
     const today = new Date().toISOString().slice(0, 10);
@@ -49,7 +55,9 @@ export class ApplicationsService {
     const vacancyDay = dto.vacancyPostedDate ?? dto.applicationDate ?? today;
     const vacancyPostedDate = new Date(`${vacancyDay}T00:00:00.000Z`);
     const status = dto.status ?? ApplicationStatus.APPLIED;
-    const stage = dto.stage ?? this.statusResolver.defaultStageFor(status);
+    const stage =
+      dto.stage ??
+      this.statusResolver.defaultStageFor(status as ApplicationStatus);
 
     let jobSearchSessionId: string | undefined;
     if (dto.jobSearchSessionId) {
@@ -259,6 +267,7 @@ export class ApplicationsService {
       applicationMethod: dto.applicationMethod,
       position: dto.position,
       employmentType: dto.employmentType,
+      workMode: dto.workMode,
     });
 
     const data: Prisma.JobApplicationUpdateInput = {};
@@ -317,11 +326,17 @@ export class ApplicationsService {
     applicationMethod?: string;
     position?: string;
     employmentType?: string | null;
+    workMode?: string;
+    status?: string;
+    stage?: string;
   }): Promise<void> {
     const hasAny =
       parts.applicationMethod !== undefined ||
       parts.position !== undefined ||
-      parts.employmentType !== undefined;
+      parts.employmentType !== undefined ||
+      parts.workMode !== undefined ||
+      parts.status !== undefined ||
+      parts.stage !== undefined;
     if (!hasAny) return;
 
     const fc = (await this.platformSettings.getFormConfig()) as FormConfigDto;
@@ -340,6 +355,21 @@ export class ApplicationsService {
         throw new BadRequestException('Invalid employmentType');
       }
     }
+    if (parts.workMode !== undefined) {
+      if (!allWorkModeIds(fc).has(parts.workMode)) {
+        throw new BadRequestException('Invalid workMode');
+      }
+    }
+    if (parts.status !== undefined) {
+      if (!allStatusIds(fc).has(parts.status)) {
+        throw new BadRequestException('Invalid status');
+      }
+    }
+    if (parts.stage !== undefined) {
+      if (!allStageIds(fc).has(parts.stage)) {
+        throw new BadRequestException('Invalid stage');
+      }
+    }
   }
 
   // ───────────────────────────────────────────────────────────────────
@@ -349,6 +379,10 @@ export class ApplicationsService {
     id: string,
     dto: ChangeStatusDto,
   ): Promise<JobApplication> {
+    await this.assertApplicationSelectors({
+      status: dto.status,
+      stage: dto.stage,
+    });
     return this.prisma.$transaction(async (tx) => {
       const application = await tx.jobApplication.findUnique({ where: { id } });
       if (!application) {
@@ -359,7 +393,8 @@ export class ApplicationsService {
       const previousStage = application.stage as ApplicationStage;
       const newStatus = dto.status;
       const newStage =
-        dto.stage ?? this.statusResolver.defaultStageFor(newStatus);
+        dto.stage ??
+        this.statusResolver.defaultStageFor(newStatus as ApplicationStatus);
 
       const occurredAt = dto.occurredAt ? new Date(dto.occurredAt) : new Date();
 
@@ -370,13 +405,18 @@ export class ApplicationsService {
       };
 
       if (
-        this.statusResolver.isFirstResponseTransition(previousStatus, newStatus) &&
+        this.statusResolver.isFirstResponseTransition(
+          previousStatus,
+          newStatus as ApplicationStatus,
+        ) &&
         !application.firstResponseAt
       ) {
         data.firstResponseAt = occurredAt;
       }
 
-      if (this.statusResolver.isClosingTransition(newStatus)) {
+      if (
+        this.statusResolver.isClosingTransition(newStatus as ApplicationStatus)
+      ) {
         data.closedAt = occurredAt;
       } else if (
         previousStatus !== newStatus &&
@@ -393,7 +433,7 @@ export class ApplicationsService {
       await tx.applicationEvent.create({
         data: {
           applicationId: updated.id,
-          type: this.eventTypeForStatus(newStatus),
+          type: this.eventTypeForStatus(newStatus as ApplicationStatus),
           newStatus,
           newStage,
           channel: dto.channel ?? null,

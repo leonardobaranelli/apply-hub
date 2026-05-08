@@ -2,6 +2,7 @@ export const PositionType = {
   BACKEND: 'backend',
   FULLSTACK: 'fullstack',
   AI_DEVELOPER: 'ai_developer',
+  OTHER: 'other',
 } as const;
 export type PositionType = (typeof PositionType)[keyof typeof PositionType];
 
@@ -23,6 +24,7 @@ export const WorkMode = {
   HYBRID: 'hybrid',
   ONSITE: 'onsite',
   UNKNOWN: 'unknown',
+  OTHER: 'other',
 } as const;
 export type WorkMode = (typeof WorkMode)[keyof typeof WorkMode];
 
@@ -32,6 +34,7 @@ export const EmploymentType = {
   CONTRACT: 'contract',
   INTERNSHIP: 'internship',
   FREELANCE: 'freelance',
+  OTHER: 'other',
 } as const;
 export type EmploymentType =
   (typeof EmploymentType)[keyof typeof EmploymentType];
@@ -49,6 +52,7 @@ export const ApplicationStatus = {
   WITHDRAWN: 'withdrawn',
   GHOSTED: 'ghosted',
   ON_HOLD: 'on_hold',
+  OTHER: 'other',
 } as const;
 export type ApplicationStatus =
   (typeof ApplicationStatus)[keyof typeof ApplicationStatus];
@@ -59,20 +63,16 @@ export const ApplicationStage = {
   RECRUITER_SCREEN: 'recruiter_screen',
   HIRING_MANAGER_SCREEN: 'hiring_manager_screen',
   TAKE_HOME: 'take_home',
-  LIVE_CODING: 'live_coding',
   TECH_INTERVIEW_1: 'tech_interview_1',
   TECH_INTERVIEW_2: 'tech_interview_2',
-  SYSTEM_DESIGN: 'system_design',
   BEHAVIORAL: 'behavioral',
   CULTURE_FIT: 'culture_fit',
-  TEAM_MATCH: 'team_match',
-  FINAL_ROUND: 'final_round',
-  REFERENCE_CHECK: 'reference_check',
   OFFER_RECEIVED: 'offer_received',
   OFFER_NEGOTIATION: 'offer_negotiation',
   OFFER_ACCEPTED: 'offer_accepted',
   OFFER_DECLINED: 'offer_declined',
   CLOSED: 'closed',
+  OTHER: 'other',
 } as const;
 export type ApplicationStage =
   (typeof ApplicationStage)[keyof typeof ApplicationStage];

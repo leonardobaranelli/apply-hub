@@ -1,16 +1,16 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { usePlatformSettings } from '@/context/platform-settings-context';
 import { chartForeground, ordinalChartColor } from '@/lib/chart-palette';
-import type { ApplicationStatus } from '@/types/enums';
-import { statusLabels } from '@/types/labels';
 
 interface FunnelStep {
-  status: ApplicationStatus;
+  status: string;
   count: number;
   conversionFromPrev: number | null;
   conversionFromTop: number;
 }
 
 export function FunnelChart({ steps }: { steps: FunnelStep[] }) {
+  const { effectiveStatusLabels } = usePlatformSettings();
   const max = Math.max(...steps.map((s) => s.count), 1);
 
   return (
@@ -25,7 +25,7 @@ export function FunnelChart({ steps }: { steps: FunnelStep[] }) {
           return (
             <div key={step.status} className="flex items-center gap-3">
               <div className="w-32 text-sm font-medium text-muted-foreground">
-                {statusLabels[step.status]}
+                {effectiveStatusLabels[step.status] ?? step.status}
               </div>
               <div className="flex flex-1 items-center gap-3">
                 <div className="relative h-9 flex-1 overflow-hidden rounded-md bg-secondary">

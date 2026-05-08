@@ -16,13 +16,7 @@ import {
   MinLength,
 } from 'class-validator';
 import { JobPostingLanguage } from '@prisma/client';
-import {
-  ApplicationStage,
-  ApplicationStatus,
-  PositionType,
-  Priority,
-  WorkMode,
-} from '../domain/application.enums';
+import { PositionType, Priority } from '../domain/application.enums';
 
 export class CreateApplicationDto {
   @ApiProperty({ description: 'Free-text company name' })
@@ -77,10 +71,14 @@ export class CreateApplicationDto {
   @MaxLength(200)
   location?: string;
 
-  @ApiPropertyOptional({ enum: WorkMode })
+  @ApiPropertyOptional({
+    description:
+      'Built-in or custom work mode id from platform settings (remote, hybrid, onsite, unknown, other, or custom slug)',
+  })
   @IsOptional()
-  @IsEnum(WorkMode)
-  workMode?: WorkMode;
+  @IsString()
+  @MaxLength(32)
+  workMode?: string;
 
   @ApiPropertyOptional({
     description: 'Built-in or custom employment type id from platform settings',
@@ -152,15 +150,21 @@ export class CreateApplicationDto {
   @MaxLength(20)
   salaryPeriod?: string;
 
-  @ApiPropertyOptional({ enum: ApplicationStatus })
+  @ApiPropertyOptional({
+    description: 'Built-in or custom application status id from platform settings',
+  })
   @IsOptional()
-  @IsEnum(ApplicationStatus)
-  status?: ApplicationStatus;
+  @IsString()
+  @MaxLength(48)
+  status?: string;
 
-  @ApiPropertyOptional({ enum: ApplicationStage })
+  @ApiPropertyOptional({
+    description: 'Built-in or custom application stage id from platform settings',
+  })
   @IsOptional()
-  @IsEnum(ApplicationStage)
-  stage?: ApplicationStage;
+  @IsString()
+  @MaxLength(48)
+  stage?: string;
 
   @ApiPropertyOptional({ enum: Priority })
   @IsOptional()

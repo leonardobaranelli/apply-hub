@@ -29,7 +29,7 @@ import { chartColor } from '@/lib/chart-palette';
 import { cn } from '@/lib/cn';
 import { formatDate, formatDateTime, formatNumber } from '@/lib/format';
 import type { SearchSessionSummary } from '@/types/models';
-import { searchCompletionLabels, statusLabels } from '@/types/labels';
+import { searchCompletionLabels } from '@/types/labels';
 
 type DashboardTab = 'pipeline' | 'search';
 
@@ -149,6 +149,7 @@ function PipelineDashboardPanel({
     effectiveMethodLabels,
     effectiveWorkModeLabels,
     effectivePositionLabels,
+    effectiveStatusLabels,
   } = usePlatformSettings();
   const { data, isLoading, isError } = useDashboard({ fromDate, toDate });
   const ghostMutation = useMarkStaleAsGhosted();
@@ -244,7 +245,7 @@ function PipelineDashboardPanel({
           title="By status"
           items={byStatus.map((s) => ({
             key: s.key,
-            label: statusLabels[s.key],
+            label: effectiveStatusLabels[s.key] ?? s.key,
             count: s.count,
             percentage: s.percentage,
           }))}
@@ -271,7 +272,7 @@ function PipelineDashboardPanel({
           title="By work mode"
           items={byWorkMode.map((w) => ({
             key: w.key,
-            label: effectiveWorkModeLabels[w.key],
+            label: effectiveWorkModeLabels[w.key] ?? w.key,
             count: w.count,
             percentage: w.percentage,
           }))}

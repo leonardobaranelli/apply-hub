@@ -1,8 +1,6 @@
 import { api } from '@/lib/api';
 import type {
   ApplicationEventType,
-  ApplicationStage,
-  ApplicationStatus,
   EventChannel,
 } from '@/types/enums';
 import type { ApplicationEvent } from '@/types/models';
@@ -13,8 +11,8 @@ export interface CreateEventInput {
   title: string;
   description?: string;
   channel?: EventChannel;
-  newStatus?: ApplicationStatus;
-  newStage?: ApplicationStage;
+  newStatus?: string;
+  newStage?: string;
   occurredAt?: string;
   metadata?: Record<string, unknown>;
 }

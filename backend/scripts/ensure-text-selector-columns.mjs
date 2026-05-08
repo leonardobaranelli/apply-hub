@@ -5,6 +5,20 @@
  * enums, run this first so values are preserved via USING (...::text).
  *
  * Idempotent: skips when tables/columns are missing or columns are already varchar.
+ *
+ * Selectors migrated:
+ *  - job_applications.position             → VARCHAR(48)
+ *  - job_applications.employment_type      → VARCHAR(48)
+ *  - job_applications.application_method   → VARCHAR(64)
+ *  - job_applications.work_mode            → VARCHAR(32)
+ *  - job_applications.status               → VARCHAR(48)
+ *  - job_applications.stage                → VARCHAR(48)
+ *  - application_events.new_status         → VARCHAR(48)
+ *  - application_events.new_stage          → VARCHAR(48)
+ *  - job_search_sessions.platform          → VARCHAR(48)
+ *
+ * After all enum→varchar conversions complete, orphan PG enum types are dropped
+ * automatically by `prisma db push` because nothing references them anymore.
  */
 import { PrismaClient } from '@prisma/client';
 
@@ -46,6 +60,33 @@ async function run(sql, label) {
   }
 }
 
+/**
+ * Convert a `USER-DEFINED` (PG enum) column to VARCHAR(N), preserving values.
+ * Optionally drops + restores a literal default to avoid the "default cannot
+ * be cast" error.
+ */
+async function convertEnumToVarchar(table, column, varcharLength, defaultLiteral) {
+  const dataType = await columnDataType(table, column);
+  if (!dataType || !isPgEnumColumn(dataType)) return;
+
+  if (defaultLiteral !== undefined) {
+    await run(
+      `ALTER TABLE "${table}" ALTER COLUMN "${column}" DROP DEFAULT`,
+      `drop default ${table}.${column}`,
+    );
+  }
+  await run(
+    `ALTER TABLE "${table}" ALTER COLUMN "${column}" TYPE VARCHAR(${varcharLength}) USING ("${column}"::text)`,
+    `${table}.${column} enum → varchar(${varcharLength})`,
+  );
+  if (defaultLiteral !== undefined) {
+    await run(
+      `ALTER TABLE "${table}" ALTER COLUMN "${column}" SET DEFAULT '${defaultLiteral}'`,
+      `set default ${table}.${column}`,
+    );
+  }
+}
+
 async function main() {
   await prisma.$connect();
 
@@ -57,62 +98,33 @@ async function main() {
       return;
     }
 
-    const posType = await columnDataType('job_applications', 'position');
-    if (posType && isPgEnumColumn(posType)) {
-      await run(
-        `ALTER TABLE "job_applications" ALTER COLUMN "position" DROP DEFAULT`,
-        'drop default position',
-      );
-      await run(
-        `ALTER TABLE "job_applications" ALTER COLUMN "position" TYPE VARCHAR(48) USING ("position"::text)`,
-        'position enum → varchar',
-      );
-      await run(
-        `ALTER TABLE "job_applications" ALTER COLUMN "position" SET DEFAULT 'backend'`,
-        'set default position',
-      );
-    }
+    // Application form selectors
+    await convertEnumToVarchar('job_applications', 'position', 48, 'backend');
+    await convertEnumToVarchar('job_applications', 'employment_type', 48);
+    await convertEnumToVarchar(
+      'job_applications',
+      'application_method',
+      64,
+      'linkedin_easy_apply',
+    );
+    await convertEnumToVarchar('job_applications', 'work_mode', 32, 'unknown');
 
-    const empType = await columnDataType('job_applications', 'employment_type');
-    if (empType && isPgEnumColumn(empType)) {
-      await run(
-        `ALTER TABLE "job_applications" ALTER COLUMN "employment_type" TYPE VARCHAR(48) USING ("employment_type"::text)`,
-        'employment_type enum → varchar',
-      );
-    }
+    // Lifecycle selectors (status/stage)
+    await convertEnumToVarchar('job_applications', 'status', 48, 'applied');
+    await convertEnumToVarchar('job_applications', 'stage', 48, 'submitted');
 
-    const methodType = await columnDataType('job_applications', 'application_method');
-    if (methodType && isPgEnumColumn(methodType)) {
-      await run(
-        `ALTER TABLE "job_applications" ALTER COLUMN "application_method" DROP DEFAULT`,
-        'drop default application_method',
-      );
-      await run(
-        `ALTER TABLE "job_applications" ALTER COLUMN "application_method" TYPE VARCHAR(64) USING ("application_method"::text)`,
-        'application_method enum → varchar',
-      );
-      await run(
-        `ALTER TABLE "job_applications" ALTER COLUMN "application_method" SET DEFAULT 'linkedin_easy_apply'`,
-        'set default application_method',
-      );
+    if (await tableExists('application_events')) {
+      await convertEnumToVarchar('application_events', 'new_status', 48);
+      await convertEnumToVarchar('application_events', 'new_stage', 48);
     }
 
     if (await tableExists('job_search_sessions')) {
-      const platType = await columnDataType('job_search_sessions', 'platform');
-      if (platType && isPgEnumColumn(platType)) {
-        await run(
-          `ALTER TABLE "job_search_sessions" ALTER COLUMN "platform" DROP DEFAULT`,
-          'drop default platform',
-        );
-        await run(
-          `ALTER TABLE "job_search_sessions" ALTER COLUMN "platform" TYPE VARCHAR(48) USING ("platform"::text)`,
-          'platform enum → varchar',
-        );
-        await run(
-          `ALTER TABLE "job_search_sessions" ALTER COLUMN "platform" SET DEFAULT 'other'`,
-          'set default platform',
-        );
-      }
+      await convertEnumToVarchar(
+        'job_search_sessions',
+        'platform',
+        48,
+        'other',
+      );
     }
 
     console.log('[ensure-text-selector-columns] Done');
