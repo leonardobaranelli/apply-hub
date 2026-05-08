@@ -1,14 +1,11 @@
 import type {
   ApplicationEventType,
-  ApplicationStage,
-  ApplicationStatus,
   ContactRole,
   EventChannel,
   JobPostingLanguage,
   Priority,
   SearchCompletionKey,
   TemplateType,
-  WorkMode,
 } from './enums';
 
 export interface Contact {
@@ -29,8 +26,8 @@ export interface ApplicationEvent {
   id: string;
   applicationId: string;
   type: ApplicationEventType;
-  newStatus: ApplicationStatus | null;
-  newStage: ApplicationStage | null;
+  newStatus: string | null;
+  newStage: string | null;
   channel: EventChannel | null;
   title: string;
   description: string | null;
@@ -66,7 +63,7 @@ export interface JobApplication {
   jobDescription: string | null;
   jobUrl: string | null;
   location: string | null;
-  workMode: WorkMode;
+  workMode: string;
   employmentType: string | null;
   applicationDate: string;
   vacancyPostedDate: string;
@@ -77,8 +74,8 @@ export interface JobApplication {
   salaryMax: string | null;
   currency: string | null;
   salaryPeriod: string | null;
-  status: ApplicationStatus;
-  stage: ApplicationStage;
+  status: string;
+  stage: string;
   priority: Priority;
   tags: string[];
   notes: string | null;
@@ -139,12 +136,12 @@ export interface DashboardOverview {
     avgDaysToFirstResponse: number | null;
     avgDaysToOffer: number | null;
   };
-  byStatus: Array<{ key: ApplicationStatus; count: number; percentage: number }>;
+  byStatus: Array<{ key: string; count: number; percentage: number }>;
   byPosition: Array<{ key: string; count: number; percentage: number }>;
   byMethod: Array<{ key: string; count: number; percentage: number }>;
-  byWorkMode: Array<{ key: WorkMode; count: number; percentage: number }>;
+  byWorkMode: Array<{ key: string; count: number; percentage: number }>;
   funnel: Array<{
-    status: ApplicationStatus;
+    status: string;
     count: number;
     conversionFromPrev: number | null;
     conversionFromTop: number;

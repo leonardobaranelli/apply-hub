@@ -320,9 +320,11 @@ Behavior:
 [`database.md`](./database.md#3-configurable-vocabularies-formconfig). The
 helpers in `form-config.helpers.ts` (`assertCustomSlugs`,
 `assertFullPermutation`, `assertSubset`, `assertLabelKeys`,
-`allMethodIds/allPositionIds/allEmploymentIds/allSearchPlatformIds`) are
-the source of truth and are reused by `ApplicationsService` and
-`SearchSessionsService` to re-validate selectors on each write.
+`assertAtLeastOneVisible`,
+`allMethodIds`/`allPositionIds`/`allEmploymentIds`/`allSearchPlatformIds`/
+`allWorkModeIds`/`allStatusIds`/`allStageIds`) are the source of truth and
+are reused by `ApplicationsService` and `SearchSessionsService` to
+re-validate selectors on each write.
 
 `theme.constants.ts` exports `ALLOWED_THEME_IDS` (12) and
 `ALLOWED_APPEARANCE_MODES` (6) as readonly tuples; the DTO uses

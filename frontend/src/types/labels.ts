@@ -19,6 +19,7 @@ export const positionLabels: Record<PositionType, string> = {
   backend: 'Backend',
   fullstack: 'Full Stack',
   ai_developer: 'AI Developer',
+  other: 'Other',
 };
 
 export const methodLabels: Record<ApplicationMethod, string> = {
@@ -37,6 +38,7 @@ export const workModeLabels: Record<WorkMode, string> = {
   hybrid: 'Hybrid',
   onsite: 'On-site',
   unknown: 'Unspecified',
+  other: 'Other',
 };
 
 export const postingLanguageLabels: Record<JobPostingLanguage, string> = {
@@ -50,6 +52,7 @@ export const employmentLabels: Record<EmploymentType, string> = {
   contract: 'Contract',
   internship: 'Internship',
   freelance: 'Freelance',
+  other: 'Other',
 };
 
 export const statusLabels: Record<ApplicationStatus, string> = {
@@ -65,6 +68,7 @@ export const statusLabels: Record<ApplicationStatus, string> = {
   withdrawn: 'Withdrawn',
   ghosted: 'Ghosted',
   on_hold: 'On hold',
+  other: 'Other',
 };
 
 export const stageLabels: Record<ApplicationStage, string> = {
@@ -73,20 +77,16 @@ export const stageLabels: Record<ApplicationStage, string> = {
   recruiter_screen: 'Recruiter screen',
   hiring_manager_screen: 'Hiring manager screen',
   take_home: 'Take-home',
-  live_coding: 'Live coding',
   tech_interview_1: 'Tech interview 1',
   tech_interview_2: 'Tech interview 2',
-  system_design: 'System design',
   behavioral: 'Behavioral',
   culture_fit: 'Culture fit',
-  team_match: 'Team match',
-  final_round: 'Final round',
-  reference_check: 'Reference check',
   offer_received: 'Offer received',
   offer_negotiation: 'Offer negotiation',
   offer_accepted: 'Offer accepted',
   offer_declined: 'Offer declined',
   closed: 'Closed',
+  other: 'Other',
 };
 
 export const priorityLabels: Record<Priority, string> = {

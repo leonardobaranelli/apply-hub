@@ -9,12 +9,7 @@ import {
   IsString,
 } from 'class-validator';
 import { PaginationDto } from '../../../common/dto/pagination.dto';
-import {
-  ApplicationStage,
-  ApplicationStatus,
-  Priority,
-  WorkMode,
-} from '../domain/application.enums';
+import { Priority } from '../domain/application.enums';
 
 const toArray = <T>(value: unknown): T[] | undefined => {
   if (value === undefined || value === null || value === '') return undefined;
@@ -39,19 +34,27 @@ export class QueryApplicationDto extends PaginationDto {
   @IsString()
   search?: string;
 
-  @ApiPropertyOptional({ enum: ApplicationStatus, isArray: true })
+  @ApiPropertyOptional({
+    type: [String],
+    description:
+      'Built-in or custom application status ids (comma-separated or repeated query param)',
+  })
   @IsOptional()
-  @Transform(({ value }) => toArray<ApplicationStatus>(value))
+  @Transform(({ value }) => toArray<string>(value))
   @IsArray()
-  @IsEnum(ApplicationStatus, { each: true })
-  status?: ApplicationStatus[];
+  @IsString({ each: true })
+  status?: string[];
 
-  @ApiPropertyOptional({ enum: ApplicationStage, isArray: true })
+  @ApiPropertyOptional({
+    type: [String],
+    description:
+      'Built-in or custom application stage ids (comma-separated or repeated query param)',
+  })
   @IsOptional()
-  @Transform(({ value }) => toArray<ApplicationStage>(value))
+  @Transform(({ value }) => toArray<string>(value))
   @IsArray()
-  @IsEnum(ApplicationStage, { each: true })
-  stage?: ApplicationStage[];
+  @IsString({ each: true })
+  stage?: string[];
 
   @ApiPropertyOptional({ type: [String] })
   @IsOptional()
@@ -67,12 +70,16 @@ export class QueryApplicationDto extends PaginationDto {
   @IsString({ each: true })
   method?: string[];
 
-  @ApiPropertyOptional({ enum: WorkMode, isArray: true })
+  @ApiPropertyOptional({
+    type: [String],
+    description:
+      'Built-in or custom work mode ids (comma-separated or repeated query param)',
+  })
   @IsOptional()
-  @Transform(({ value }) => toArray<WorkMode>(value))
+  @Transform(({ value }) => toArray<string>(value))
   @IsArray()
-  @IsEnum(WorkMode, { each: true })
-  workMode?: WorkMode[];
+  @IsString({ each: true })
+  workMode?: string[];
 
   @ApiPropertyOptional({ enum: Priority, isArray: true })
   @IsOptional()

@@ -1,8 +1,11 @@
 import { BadRequestException } from '@nestjs/common';
 import {
   ApplicationMethod,
+  ApplicationStage,
+  ApplicationStatus,
   EmploymentType,
   PositionType,
+  WorkMode,
 } from '../../applications/domain/application.enums';
 import { SearchPlatform } from '../../search-sessions/domain/search-session.enums';
 import type { FormConfigDto } from '../dto/form-config.dto';
@@ -25,6 +28,11 @@ export const BUILTIN_EMPLOYMENT_IDS = new Set<string>(
 export const BUILTIN_SEARCH_PLATFORM_IDS = new Set<string>(
   enumValues(SearchPlatform),
 );
+export const BUILTIN_WORK_MODE_IDS = new Set<string>(enumValues(WorkMode));
+export const BUILTIN_STATUS_IDS = new Set<string>(
+  enumValues(ApplicationStatus),
+);
+export const BUILTIN_STAGE_IDS = new Set<string>(enumValues(ApplicationStage));
 
 export function allMethodIds(config: FormConfigDto): Set<string> {
   const out = new Set(BUILTIN_METHOD_IDS);
@@ -53,6 +61,30 @@ export function allEmploymentIds(config: FormConfigDto): Set<string> {
 export function allSearchPlatformIds(config: FormConfigDto): Set<string> {
   const out = new Set(BUILTIN_SEARCH_PLATFORM_IDS);
   for (const id of config.customSearchPlatforms ?? []) {
+    out.add(id);
+  }
+  return out;
+}
+
+export function allWorkModeIds(config: FormConfigDto): Set<string> {
+  const out = new Set(BUILTIN_WORK_MODE_IDS);
+  for (const id of config.customWorkModes ?? []) {
+    out.add(id);
+  }
+  return out;
+}
+
+export function allStatusIds(config: FormConfigDto): Set<string> {
+  const out = new Set(BUILTIN_STATUS_IDS);
+  for (const id of config.customApplicationStatuses ?? []) {
+    out.add(id);
+  }
+  return out;
+}
+
+export function allStageIds(config: FormConfigDto): Set<string> {
+  const out = new Set(BUILTIN_STAGE_IDS);
+  for (const id of config.customApplicationStages ?? []) {
     out.add(id);
   }
   return out;
@@ -130,5 +162,24 @@ export function assertLabelKeys(
     if (!universe.has(key)) {
       throw new BadRequestException(`${field}: unknown key "${key}"`);
     }
+  }
+}
+
+/**
+ * Enforce that at least one option in the configurable list remains
+ * visible. Hiding every option would break the corresponding selector
+ * (no value to choose), so we reject it.
+ */
+export function assertAtLeastOneVisible(
+  hidden: string[] | undefined,
+  universe: Set<string>,
+  field: string,
+): void {
+  if (!hidden?.length) return;
+  const unique = new Set(hidden);
+  if (unique.size >= universe.size) {
+    throw new BadRequestException(
+      `${field}: at least one option must remain visible`,
+    );
   }
 }

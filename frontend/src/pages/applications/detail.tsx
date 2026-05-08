@@ -44,7 +44,6 @@ import {
   postingLanguageLabels,
   priorityLabels,
   searchCompletionLabels,
-  stageLabels,
 } from '@/types/labels';
 import type { JobApplication } from '@/types/models';
 
@@ -55,6 +54,7 @@ export function ApplicationDetailPage() {
     effectivePositionLabels,
     effectiveEmploymentLabels,
     effectiveSearchPlatformLabels,
+    effectiveStageLabels,
   } = usePlatformSettings();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -133,7 +133,9 @@ export function ApplicationDetailPage() {
             </span>
           ) : null}
           <StatusBadge status={application.status} />
-          <Badge variant="outline">{stageLabels[application.stage]}</Badge>
+          <Badge variant="outline">
+            {effectiveStageLabels[application.stage] ?? application.stage}
+          </Badge>
           {application.archivedAt ? (
             <Badge variant="secondary">Archived</Badge>
           ) : null}

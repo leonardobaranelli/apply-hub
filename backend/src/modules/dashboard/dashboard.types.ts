@@ -1,7 +1,4 @@
-import {
-  ApplicationStatus,
-  WorkMode,
-} from '../applications/domain/application.enums';
+import { ApplicationStatus } from '../applications/domain/application.enums';
 
 export type SearchCompletionKey = 'complete' | 'active';
 
@@ -62,10 +59,10 @@ export interface TopCompany {
 
 export interface DashboardOverview {
   kpis: KpiSummary;
-  byStatus: DistributionItem<ApplicationStatus>[];
+  byStatus: DistributionItem<string>[];
   byPosition: DistributionItem<string>[];
   byMethod: DistributionItem<string>[];
-  byWorkMode: DistributionItem<WorkMode>[];
+  byWorkMode: DistributionItem<string>[];
   funnel: FunnelStep[];
   applicationsPerDay: TimeSeriesPoint[];
   activityHeatmap: ActivityHeatmapCell[];

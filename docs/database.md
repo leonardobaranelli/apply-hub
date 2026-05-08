@@ -59,7 +59,7 @@ Indexes: `(email)`, `(companyName)`. Relation:
 | `jobDescription` | `Text?` | — |
 | `jobUrl` | `VarChar(500)?` | — |
 | `location` | `VarChar(200)?` | — |
-| `workMode` | `WorkMode` enum | default `unknown`. **Strict enum**, no custom slugs. |
+| `workMode` | `VarChar(32)` | default `unknown`. Strings = built-in IDs ∪ custom slugs from `formConfig.customWorkModes`. |
 | `employmentType` | `VarChar(48)?` | vocabulary. |
 | `applicationDate` | `Date` | required. |
 | `vacancyPostedDate` | `Date` | default `now()`; service overrides to `applicationDate ?? today`. |
@@ -69,8 +69,8 @@ Indexes: `(email)`, `(companyName)`. Relation:
 | `salaryMin` / `salaryMax` | `Decimal(12,2)?` | serialized as **string** by Prisma. |
 | `currency` | `VarChar(10)?` | — |
 | `salaryPeriod` | `VarChar(20)?` | — |
-| `status` | `ApplicationStatus` enum | default `applied`. |
-| `stage` | `ApplicationStage` enum | default `submitted`. |
+| `status` | `VarChar(48)` | default `applied`. Strings = built-in IDs ∪ custom slugs from `formConfig.customApplicationStatuses`. |
+| `stage` | `VarChar(48)` | default `submitted`. Strings = built-in IDs ∪ custom slugs from `formConfig.customApplicationStages`. |
 | `priority` | `Priority` enum | default `medium`. |
 | `tags` | `String[]` | default `[]`. |
 | `notes` | `Text?` | — |
@@ -115,8 +115,8 @@ Indexes: `(searchedAt)`, `(platform)`. Relation:
 | `id` | `Uuid` | PK. |
 | `applicationId` | `Uuid` | FK to `JobApplication.id`, `onDelete: Cascade`. |
 | `type` | `ApplicationEventType` enum | required. |
-| `newStatus` | `ApplicationStatus?` | optional. |
-| `newStage` | `ApplicationStage?` | optional. |
+| `newStatus` | `VarChar(48)?` | optional. Built-in IDs or custom slugs from `formConfig.customApplicationStatuses`. |
+| `newStage` | `VarChar(48)?` | optional. Built-in IDs or custom slugs from `formConfig.customApplicationStages`. |
 | `channel` | `EventChannel?` | optional. |
 | `title` | `VarChar(250)` | required. |
 | `description` | `Text?` | — |
@@ -198,20 +198,23 @@ interface PlatformFormConfig {
 }
 ```
 
-### 3.1 Built-in IDs (mirror Prisma enums)
+### 3.1 Built-in IDs (mirror the TypeScript enums)
 
 | Group | IDs |
 | ----- | --- |
 | `applicationMethod` | `email`, `linkedin_easy_apply`, `linkedin_external`, `company_website`, `job_board`, `referral`, `recruiter_outreach`, `other` |
-| `position` | `backend`, `fullstack`, `ai_developer` |
-| `employmentType` | `full_time`, `part_time`, `contract`, `internship`, `freelance` |
+| `position` | `backend`, `fullstack`, `ai_developer`, `other` |
+| `employmentType` | `full_time`, `part_time`, `contract`, `internship`, `freelance`, `other` |
 | `searchPlatform` | `linkedin`, `google`, `indeed`, `glassdoor`, `job_board`, `company_site`, `recruiter_portal`, `other` |
-| `workMode` | `remote`, `hybrid`, `onsite`, `unknown` *(strict enum, no custom)* |
+| `workMode` | `remote`, `hybrid`, `onsite`, `unknown`, `other` |
+| `applicationStatus` | `applied`, `acknowledged`, `screening`, `assessment`, `interview`, `offer`, `negotiating`, `accepted`, `rejected`, `withdrawn`, `ghosted`, `on_hold`, `other` |
+| `applicationStage` | `submitted`, `auto_reply`, `recruiter_screen`, `hiring_manager_screen`, `take_home`, `tech_interview_1`, `tech_interview_2`, `behavioral`, `culture_fit`, `offer_received`, `offer_negotiation`, `offer_accepted`, `offer_declined`, `closed`, `other` |
 
 The active universe for any group is `built-in ∪ custom*`. The validation
 helpers (`backend/src/modules/platform-settings/domain/form-config.helpers.ts`)
 expose `allMethodIds(config)`, `allPositionIds(config)`,
-`allEmploymentIds(config)`, `allSearchPlatformIds(config)`.
+`allEmploymentIds(config)`, `allSearchPlatformIds(config)`,
+`allWorkModeIds(config)`, `allStatusIds(config)`, `allStageIds(config)`.
 
 ### 3.2 Validation rules
 
@@ -219,9 +222,8 @@ expose `allMethodIds(config)`, `allPositionIds(config)`,
 | ----- | ---- |
 | `custom*` | Each entry matches `^[a-z][a-z0-9_]{0,47}$`, must not collide with a built-in ID, no duplicates within the array. |
 | `*Order` | If present, must be a **full permutation** of the universe (same length, no duplicates, no unknowns). |
-| `*Hidden` | Subset of the universe. |
+| `*Hidden` | Subset of the universe **AND** must keep at least one option visible (size < universe size). |
 | `*Labels` | Keys must be members of the universe. Empty-string values are dropped at merge time. |
-| `workModeLabels` | Keys must be members of `WorkMode` enum (no customization at the slug level). |
 | `roleTitleOptions` | ≤ 80 entries (each entry ≤ 200 chars enforced by DTO `@MaxLength`). |
 | `resumeVersionOptions` | ≤ 40 entries (each ≤ 120 chars). |
 
@@ -230,8 +232,9 @@ Failure raises `400 BadRequestException` with a precise message
 
 ### 3.3 Re-validation on writes
 
-`ApplicationsService.assertApplicationSelectors` runs on `create` and
-`update` for any of `applicationMethod`, `position`, `employmentType`.
+`ApplicationsService.assertApplicationSelectors` runs on `create`,
+`update` and `changeStatus` for any of `applicationMethod`, `position`,
+`employmentType`, `workMode`, `status`, `stage`.
 `SearchSessionsService.assertSearchPlatform` runs on `create` and `update`
 for `platform`. **The implication**: removing a custom slug from settings
 does **not** rewrite history (existing rows keep their value), but it
@@ -239,9 +242,10 @@ prevents new rows from using it.
 
 ### 3.4 `ensure-text-selector-columns.mjs`
 
-Older deployments stored `position`, `employment_type`, `application_method`
-and `platform` as **PostgreSQL enums**. Since these vocabularies must accept
-custom slugs at runtime, the columns were migrated to `VARCHAR`.
+Older deployments stored `position`, `employment_type`, `application_method`,
+`platform`, `work_mode`, `status`, `stage`, `new_status` and `new_stage` as
+**PostgreSQL enums**. Since these vocabularies must accept custom slugs at
+runtime, the columns were migrated to `VARCHAR`.
 
 `backend/scripts/ensure-text-selector-columns.mjs` performs that migration
 **idempotently**:
@@ -251,7 +255,7 @@ custom slugs at runtime, the columns were migrated to `VARCHAR`.
 2. If so, drops the column default, runs
    `ALTER TABLE … ALTER COLUMN … TYPE VARCHAR(N) USING (col::text)`, then
    restores the default literal (`'backend'`, `'linkedin_easy_apply'`,
-   `'other'`).
+   `'unknown'`, `'applied'`, `'submitted'`, …).
 3. If the column is already `VARCHAR`, skips.
 
 This script is run **before** `prisma db push` in the dev `Dockerfile`

@@ -41,6 +41,8 @@ import {
 } from '@/lib/theme-presets';
 import {
   ApplicationMethod,
+  ApplicationStage,
+  ApplicationStatus,
   EmploymentType,
   PositionType,
   SearchPlatform,
@@ -51,6 +53,8 @@ import {
   methodLabels,
   positionLabels,
   searchPlatformLabels,
+  stageLabels,
+  statusLabels,
   workModeLabels,
 } from '@/types/labels';
 import type { PlatformFormConfig } from '@/types/platform-settings';
@@ -63,11 +67,16 @@ const ALL_POSITIONS = Object.values(PositionType);
 const ALL_EMPLOYMENT = Object.values(EmploymentType);
 const ALL_SEARCH_PLATFORMS = Object.values(SearchPlatform);
 const ALL_WORK_MODES = Object.values(WorkMode);
+const ALL_STATUSES = Object.values(ApplicationStatus);
+const ALL_STAGES = Object.values(ApplicationStage);
 
 const BUILTIN_METHOD = new Set<string>(ALL_METHODS);
 const BUILTIN_POSITION = new Set<string>(ALL_POSITIONS);
 const BUILTIN_EMPLOYMENT = new Set<string>(ALL_EMPLOYMENT);
 const BUILTIN_SEARCH_PLATFORM = new Set<string>(ALL_SEARCH_PLATFORMS);
+const BUILTIN_WORK_MODE = new Set<string>(ALL_WORK_MODES);
+const BUILTIN_STATUS = new Set<string>(ALL_STATUSES);
+const BUILTIN_STAGE = new Set<string>(ALL_STAGES);
 
 function normalizeOrder(
   cfg: PlatformFormConfig | undefined,
@@ -133,7 +142,7 @@ function stableSerialize(value: unknown): string {
   return JSON.stringify(value);
 }
 
-function buildFormConfig(params: {
+interface BuildFormConfigParams {
   methodOrder: string[];
   labelByMethod: Record<string, string>;
   hiddenMethods: Set<string>;
@@ -146,10 +155,20 @@ function buildFormConfig(params: {
   searchPlatformOrder: string[];
   labelBySearchPlatform: Record<string, string>;
   hiddenSearchPlatforms: Set<string>;
-  labelByWorkMode: Record<WorkMode, string>;
+  workModeOrder: string[];
+  labelByWorkMode: Record<string, string>;
+  hiddenWorkModes: Set<string>;
+  statusOrder: string[];
+  labelByStatus: Record<string, string>;
+  hiddenStatuses: Set<string>;
+  stageOrder: string[];
+  labelByStage: Record<string, string>;
+  hiddenStages: Set<string>;
   roleTitleOptions: string[];
   resumeVersionOptions: string[];
-}): PlatformFormConfig {
+}
+
+function buildFormConfig(params: BuildFormConfigParams): PlatformFormConfig {
   const {
     methodOrder,
     labelByMethod,
@@ -163,61 +182,87 @@ function buildFormConfig(params: {
     searchPlatformOrder,
     labelBySearchPlatform,
     hiddenSearchPlatforms,
+    workModeOrder,
     labelByWorkMode,
+    hiddenWorkModes,
+    statusOrder,
+    labelByStatus,
+    hiddenStatuses,
+    stageOrder,
+    labelByStage,
+    hiddenStages,
     roleTitleOptions,
     resumeVersionOptions,
   } = params;
 
-  const applicationMethodLabels = diffLabels(
-    methodOrder,
-    labelByMethod,
-    methodLabels as Record<string, string>,
-  );
-  const positionLabelsOut = diffLabels(
-    positionOrder,
-    labelByPosition,
-    positionLabels as Record<string, string>,
-  );
-  const employmentLabelsOut = diffLabels(
-    employmentOrder,
-    labelByEmployment,
-    employmentLabels as Record<string, string>,
-  );
-  const searchPlatformLabelsOut = diffLabels(
-    searchPlatformOrder,
-    labelBySearchPlatform,
-    searchPlatformLabels as Record<string, string>,
-  );
-
-  const workModeLabelsOut: Record<string, string> = {};
-  for (const w of ALL_WORK_MODES) {
-    const v = labelByWorkMode[w]?.trim() ?? '';
-    if (v && v !== workModeLabels[w]) workModeLabelsOut[w] = v;
-  }
-
   return {
     customApplicationMethods: methodOrder.filter((id) => !BUILTIN_METHOD.has(id)),
-    applicationMethodLabels,
+    applicationMethodLabels: diffLabels(
+      methodOrder,
+      labelByMethod,
+      methodLabels as Record<string, string>,
+    ),
     applicationMethodOrder: [...methodOrder],
     applicationMethodHidden: [...hiddenMethods],
+
     customPositionTypes: positionOrder.filter((id) => !BUILTIN_POSITION.has(id)),
-    positionLabels: positionLabelsOut,
+    positionLabels: diffLabels(
+      positionOrder,
+      labelByPosition,
+      positionLabels as Record<string, string>,
+    ),
     positionOrder: [...positionOrder],
     positionHidden: [...hiddenPositions],
+
     customEmploymentTypes: employmentOrder.filter(
       (id) => !BUILTIN_EMPLOYMENT.has(id),
     ),
-    employmentLabels: employmentLabelsOut,
+    employmentLabels: diffLabels(
+      employmentOrder,
+      labelByEmployment,
+      employmentLabels as Record<string, string>,
+    ),
     employmentOrder: [...employmentOrder],
     employmentHidden: [...hiddenEmployment],
+
     customSearchPlatforms: searchPlatformOrder.filter(
       (id) => !BUILTIN_SEARCH_PLATFORM.has(id),
     ),
-    searchPlatformLabels: searchPlatformLabelsOut,
+    searchPlatformLabels: diffLabels(
+      searchPlatformOrder,
+      labelBySearchPlatform,
+      searchPlatformLabels as Record<string, string>,
+    ),
     searchPlatformOrder: [...searchPlatformOrder],
     searchPlatformHidden: [...hiddenSearchPlatforms],
-    workModeLabels:
-      Object.keys(workModeLabelsOut).length > 0 ? workModeLabelsOut : undefined,
+
+    customWorkModes: workModeOrder.filter((id) => !BUILTIN_WORK_MODE.has(id)),
+    workModeLabels: diffLabels(
+      workModeOrder,
+      labelByWorkMode,
+      workModeLabels as Record<string, string>,
+    ),
+    workModeOrder: [...workModeOrder],
+    workModeHidden: [...hiddenWorkModes],
+
+    customApplicationStatuses: statusOrder.filter((id) => !BUILTIN_STATUS.has(id)),
+    applicationStatusLabels: diffLabels(
+      statusOrder,
+      labelByStatus,
+      statusLabels as Record<string, string>,
+    ),
+    applicationStatusOrder: [...statusOrder],
+    applicationStatusHidden: [...hiddenStatuses],
+
+    customApplicationStages: stageOrder.filter((id) => !BUILTIN_STAGE.has(id)),
+    applicationStageLabels: diffLabels(
+      stageOrder,
+      labelByStage,
+      stageLabels as Record<string, string>,
+    ),
+    applicationStageOrder: [...stageOrder],
+    applicationStageHidden: [...hiddenStages],
+
     roleTitleOptions: (() => {
       const rows = roleTitleOptions.map((s) => s.trim()).filter(Boolean);
       return rows.length ? rows : [...DEFAULT_ROLE_TITLE_OPTIONS];
@@ -279,9 +324,31 @@ export function SettingsPage() {
   const [newSearchPlatformSlug, setNewSearchPlatformSlug] = useState('');
   const [searchPlatformSlugError, setSearchPlatformSlugError] = useState('');
 
-  const [labelByWorkMode, setLabelByWorkMode] = useState<Record<WorkMode, string>>(
+  const [workModeOrder, setWorkModeOrder] = useState<string[]>([
+    ...ALL_WORK_MODES,
+  ]);
+  const [labelByWorkMode, setLabelByWorkMode] = useState<Record<string, string>>(
     { ...workModeLabels },
   );
+  const [hiddenWorkModes, setHiddenWorkModes] = useState<Set<string>>(new Set());
+  const [newWorkModeSlug, setNewWorkModeSlug] = useState('');
+  const [workModeSlugError, setWorkModeSlugError] = useState('');
+
+  const [statusOrder, setStatusOrder] = useState<string[]>([...ALL_STATUSES]);
+  const [labelByStatus, setLabelByStatus] = useState<Record<string, string>>({
+    ...statusLabels,
+  });
+  const [hiddenStatuses, setHiddenStatuses] = useState<Set<string>>(new Set());
+  const [newStatusSlug, setNewStatusSlug] = useState('');
+  const [statusSlugError, setStatusSlugError] = useState('');
+
+  const [stageOrder, setStageOrder] = useState<string[]>([...ALL_STAGES]);
+  const [labelByStage, setLabelByStage] = useState<Record<string, string>>({
+    ...stageLabels,
+  });
+  const [hiddenStages, setHiddenStages] = useState<Set<string>>(new Set());
+  const [newStageSlug, setNewStageSlug] = useState('');
+  const [stageSlugError, setStageSlugError] = useState('');
 
   const [roleTitleOptions, setRoleTitleOptions] = useState<string[]>([
     ...DEFAULT_ROLE_TITLE_OPTIONS,
@@ -290,7 +357,8 @@ export function SettingsPage() {
     ...DEFAULT_RESUME_VERSION_OPTIONS,
   ]);
   const [persistedTheme, setPersistedTheme] = useState<ThemePresetId>('ocean');
-  const [persistedAppearance, setPersistedAppearance] = useState<AppearanceMode>('dark');
+  const [persistedAppearance, setPersistedAppearance] =
+    useState<AppearanceMode>('dark');
   const [persistedConfigSignature, setPersistedConfigSignature] = useState('{}');
 
   const hasInitializedRef = useRef(false);
@@ -306,59 +374,113 @@ export function SettingsPage() {
 
     const cfg = settings.formConfig ?? {};
 
-    setMethodOrder(
-      normalizeOrder(cfg, ALL_METHODS, BUILTIN_METHOD, 'customApplicationMethods', 'applicationMethodOrder'),
-    );
-    const ml: Record<string, string> = { ...methodLabels };
-    for (const [k, v] of Object.entries(cfg.applicationMethodLabels ?? {})) {
-      if (v) ml[k] = v;
-    }
-    setLabelByMethod(ml);
-    setHiddenMethods(new Set(cfg.applicationMethodHidden ?? []));
-
-    setPositionOrder(
-      normalizeOrder(cfg, ALL_POSITIONS, BUILTIN_POSITION, 'customPositionTypes', 'positionOrder'),
-    );
-    const pl: Record<string, string> = { ...positionLabels };
-    for (const [k, v] of Object.entries(cfg.positionLabels ?? {})) {
-      if (v) pl[k] = v;
-    }
-    setLabelByPosition(pl);
-    setHiddenPositions(new Set(cfg.positionHidden ?? []));
-
-    setEmploymentOrder(
-      normalizeOrder(cfg, ALL_EMPLOYMENT, BUILTIN_EMPLOYMENT, 'customEmploymentTypes', 'employmentOrder'),
-    );
-    const el: Record<string, string> = { ...employmentLabels };
-    for (const [k, v] of Object.entries(cfg.employmentLabels ?? {})) {
-      if (v) el[k] = v;
-    }
-    setLabelByEmployment(el);
-    setHiddenEmployment(new Set(cfg.employmentHidden ?? []));
-
-    setSearchPlatformOrder(
-      normalizeOrder(
-        cfg,
-        ALL_SEARCH_PLATFORMS,
-        BUILTIN_SEARCH_PLATFORM,
-        'customSearchPlatforms',
-        'searchPlatformOrder',
-      ),
-    );
-    const spl: Record<string, string> = { ...searchPlatformLabels };
-    for (const [k, v] of Object.entries(cfg.searchPlatformLabels ?? {})) {
-      if (v) spl[k] = v;
-    }
-    setLabelBySearchPlatform(spl);
-    setHiddenSearchPlatforms(new Set(cfg.searchPlatformHidden ?? []));
-
-    const wm = { ...workModeLabels };
-    for (const [k, v] of Object.entries(cfg.workModeLabels ?? {})) {
-      if (v && ALL_WORK_MODES.includes(k as WorkMode)) {
-        wm[k as WorkMode] = v;
+    const seedListState = (
+      builtins: string[],
+      builtinSet: Set<string>,
+      customKey: keyof PlatformFormConfig,
+      orderKey: keyof PlatformFormConfig,
+      labelsKey: keyof PlatformFormConfig,
+      hiddenKey: keyof PlatformFormConfig,
+      defaults: Record<string, string>,
+      setOrder: Dispatch<SetStateAction<string[]>>,
+      setLabels: Dispatch<SetStateAction<Record<string, string>>>,
+      setHidden: Dispatch<SetStateAction<Set<string>>>,
+    ): void => {
+      setOrder(normalizeOrder(cfg, builtins, builtinSet, customKey, orderKey));
+      const merged: Record<string, string> = { ...defaults };
+      const labelOverrides =
+        (cfg[labelsKey] as Partial<Record<string, string>> | undefined) ?? {};
+      for (const [k, v] of Object.entries(labelOverrides)) {
+        if (v) merged[k] = v;
       }
-    }
-    setLabelByWorkMode(wm);
+      setLabels(merged);
+      setHidden(new Set((cfg[hiddenKey] as string[] | undefined) ?? []));
+    };
+
+    seedListState(
+      ALL_METHODS,
+      BUILTIN_METHOD,
+      'customApplicationMethods',
+      'applicationMethodOrder',
+      'applicationMethodLabels',
+      'applicationMethodHidden',
+      methodLabels as Record<string, string>,
+      setMethodOrder,
+      setLabelByMethod,
+      setHiddenMethods,
+    );
+    seedListState(
+      ALL_POSITIONS,
+      BUILTIN_POSITION,
+      'customPositionTypes',
+      'positionOrder',
+      'positionLabels',
+      'positionHidden',
+      positionLabels as Record<string, string>,
+      setPositionOrder,
+      setLabelByPosition,
+      setHiddenPositions,
+    );
+    seedListState(
+      ALL_EMPLOYMENT,
+      BUILTIN_EMPLOYMENT,
+      'customEmploymentTypes',
+      'employmentOrder',
+      'employmentLabels',
+      'employmentHidden',
+      employmentLabels as Record<string, string>,
+      setEmploymentOrder,
+      setLabelByEmployment,
+      setHiddenEmployment,
+    );
+    seedListState(
+      ALL_SEARCH_PLATFORMS,
+      BUILTIN_SEARCH_PLATFORM,
+      'customSearchPlatforms',
+      'searchPlatformOrder',
+      'searchPlatformLabels',
+      'searchPlatformHidden',
+      searchPlatformLabels as Record<string, string>,
+      setSearchPlatformOrder,
+      setLabelBySearchPlatform,
+      setHiddenSearchPlatforms,
+    );
+    seedListState(
+      ALL_WORK_MODES,
+      BUILTIN_WORK_MODE,
+      'customWorkModes',
+      'workModeOrder',
+      'workModeLabels',
+      'workModeHidden',
+      workModeLabels as Record<string, string>,
+      setWorkModeOrder,
+      setLabelByWorkMode,
+      setHiddenWorkModes,
+    );
+    seedListState(
+      ALL_STATUSES,
+      BUILTIN_STATUS,
+      'customApplicationStatuses',
+      'applicationStatusOrder',
+      'applicationStatusLabels',
+      'applicationStatusHidden',
+      statusLabels as Record<string, string>,
+      setStatusOrder,
+      setLabelByStatus,
+      setHiddenStatuses,
+    );
+    seedListState(
+      ALL_STAGES,
+      BUILTIN_STAGE,
+      'customApplicationStages',
+      'applicationStageOrder',
+      'applicationStageLabels',
+      'applicationStageHidden',
+      stageLabels as Record<string, string>,
+      setStageOrder,
+      setLabelByStage,
+      setHiddenStages,
+    );
 
     setRoleTitleOptions(
       cfg.roleTitleOptions?.length
@@ -379,9 +501,17 @@ export function SettingsPage() {
     setEmploymentSlugError('');
     setNewSearchPlatformSlug('');
     setSearchPlatformSlugError('');
+    setNewWorkModeSlug('');
+    setWorkModeSlugError('');
+    setNewStatusSlug('');
+    setStatusSlugError('');
+    setNewStageSlug('');
+    setStageSlugError('');
 
     setPersistedTheme((settings.themeId as ThemePresetId) ?? applied.theme);
-    setPersistedAppearance((settings.appearanceMode as AppearanceMode) ?? applied.appearance);
+    setPersistedAppearance(
+      (settings.appearanceMode as AppearanceMode) ?? applied.appearance,
+    );
     setPersistedConfigSignature(stableSerialize(cfg));
 
     hasInitializedRef.current = true;
@@ -402,7 +532,15 @@ export function SettingsPage() {
         searchPlatformOrder,
         labelBySearchPlatform,
         hiddenSearchPlatforms,
+        workModeOrder,
         labelByWorkMode,
+        hiddenWorkModes,
+        statusOrder,
+        labelByStatus,
+        hiddenStatuses,
+        stageOrder,
+        labelByStage,
+        hiddenStages,
         roleTitleOptions,
         resumeVersionOptions,
       }),
@@ -419,7 +557,15 @@ export function SettingsPage() {
       searchPlatformOrder,
       labelBySearchPlatform,
       hiddenSearchPlatforms,
+      workModeOrder,
       labelByWorkMode,
+      hiddenWorkModes,
+      statusOrder,
+      labelByStatus,
+      hiddenStatuses,
+      stageOrder,
+      labelByStage,
+      hiddenStages,
       roleTitleOptions,
       resumeVersionOptions,
     ],
@@ -526,10 +672,7 @@ export function SettingsPage() {
     ],
   );
 
-  const handleSave = useCallback(
-    () => persistDraft(true),
-    [persistDraft],
-  );
+  const handleSave = useCallback(() => persistDraft(true), [persistDraft]);
 
   useEffect(() => {
     if (!hasInitializedRef.current) return;
@@ -566,32 +709,39 @@ export function SettingsPage() {
     slugError: string;
     setSlugError: (s: string) => void;
     addLabelPlaceholder: string;
-  }): JSX.Element => (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">{opts.title}</CardTitle>
-        <p className="text-xs text-muted-foreground">{opts.description}</p>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <div className="flex flex-wrap items-end gap-2 rounded-lg border border-border/60 bg-card/30 p-3">
-          <div className="min-w-[200px] flex-1">
-            <Label className="text-xs text-muted-foreground">New option id (slug)</Label>
-            <Input
-              className="mt-1 font-mono text-sm"
-              value={opts.newSlug}
-              onChange={(e) => opts.setNewSlug(e.target.value.toLowerCase())}
-              placeholder="e.g. wellfound_apply"
-            />
-            {opts.slugError ? (
-              <p className="mt-1 text-xs text-destructive">{opts.slugError}</p>
-            ) : null}
-          </div>
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            className="mb-0.5"
-            onClick={() =>
+  }): JSX.Element => {
+    const visibleCount = opts.order.filter((id) => !opts.hidden.has(id)).length;
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">{opts.title}</CardTitle>
+          <p className="text-xs text-muted-foreground">{opts.description}</p>
+          <p className="text-[11px] text-muted-foreground">
+            At least one option must remain visible.
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex flex-wrap items-end gap-2 rounded-lg border border-border/60 bg-card/30 p-3">
+            <div className="min-w-[200px] flex-1">
+              <Label className="text-xs text-muted-foreground">
+                New option id (slug)
+              </Label>
+              <Input
+                className="mt-1 font-mono text-sm"
+                value={opts.newSlug}
+                onChange={(e) => opts.setNewSlug(e.target.value.toLowerCase())}
+                placeholder="e.g. wellfound_apply"
+              />
+              {opts.slugError ? (
+                <p className="mt-1 text-xs text-destructive">{opts.slugError}</p>
+              ) : null}
+            </div>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              className="mb-0.5"
+              onClick={() =>
                 tryAddCustomSlug(
                   opts.newSlug,
                   opts.builtinSet,
@@ -601,116 +751,141 @@ export function SettingsPage() {
                   opts.setSlugError,
                   opts.addLabelPlaceholder,
                 )
-            }
-          >
-            <Plus size={14} /> Add
-          </Button>
-        </div>
-
-        {opts.order.map((id, i) => {
-          const isBuiltin = opts.builtinSet.has(id);
-          return (
-            <div
-              key={id}
-              className="flex flex-wrap items-center gap-2 rounded-lg border border-border/80 bg-card/50 px-3 py-2"
+              }
             >
-              <div className="flex flex-col gap-0.5">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  className="h-6 px-1"
-                  disabled={i === 0}
-                  onClick={() =>
-                    opts.setOrder((prev) => {
-                      const j = i - 1;
-                      if (j < 0) return prev;
-                      const next = [...prev];
-                      [next[i], next[j]] = [next[j], next[i]];
-                      return next;
-                    })
+              <Plus size={14} /> Add
+            </Button>
+          </div>
+
+          {opts.order.map((id, i) => {
+            const isBuiltin = opts.builtinSet.has(id);
+            const isHidden = opts.hidden.has(id);
+            const wouldBeLastVisible = !isHidden && visibleCount <= 1;
+            return (
+              <div
+                key={id}
+                className="flex flex-wrap items-center gap-2 rounded-lg border border-border/80 bg-card/50 px-3 py-2"
+              >
+                <div className="flex flex-col gap-0.5">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 px-1"
+                    disabled={i === 0}
+                    onClick={() =>
+                      opts.setOrder((prev) => {
+                        const j = i - 1;
+                        if (j < 0) return prev;
+                        const next = [...prev];
+                        [next[i], next[j]] = [next[j], next[i]];
+                        return next;
+                      })
+                    }
+                    aria-label="Move up"
+                  >
+                    <ChevronUp size={14} />
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 px-1"
+                    disabled={i === opts.order.length - 1}
+                    onClick={() =>
+                      opts.setOrder((prev) => {
+                        const j = i + 1;
+                        if (j >= prev.length) return prev;
+                        const next = [...prev];
+                        [next[i], next[j]] = [next[j], next[i]];
+                        return next;
+                      })
+                    }
+                    aria-label="Move down"
+                  >
+                    <ChevronDown size={14} />
+                  </Button>
+                </div>
+                <code className="hidden w-44 shrink-0 text-[11px] text-muted-foreground sm:block">
+                  {id}
+                </code>
+                <div className="min-w-[200px] flex-1">
+                  <Label className="sr-only">Label for {id}</Label>
+                  <Input
+                    value={opts.labels[id] ?? ''}
+                    onChange={(e) =>
+                      opts.setLabels((prev) => ({
+                        ...prev,
+                        [id]: e.target.value,
+                      }))
+                    }
+                    placeholder={opts.defaultLabels[id] ?? id}
+                  />
+                </div>
+                <label
+                  className={cn(
+                    'flex items-center gap-2 text-xs',
+                    wouldBeLastVisible
+                      ? 'cursor-not-allowed text-muted-foreground/50'
+                      : 'text-muted-foreground',
+                  )}
+                  title={
+                    wouldBeLastVisible
+                      ? 'At least one option must remain visible'
+                      : undefined
                   }
-                  aria-label="Move up"
                 >
-                  <ChevronUp size={14} />
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  className="h-6 px-1"
-                  disabled={i === opts.order.length - 1}
-                  onClick={() =>
-                    opts.setOrder((prev) => {
-                      const j = i + 1;
-                      if (j >= prev.length) return prev;
-                      const next = [...prev];
-                      [next[i], next[j]] = [next[j], next[i]];
-                      return next;
-                    })
-                  }
-                  aria-label="Move down"
-                >
-                  <ChevronDown size={14} />
-                </Button>
+                  <input
+                    type="checkbox"
+                    checked={isHidden}
+                    disabled={wouldBeLastVisible}
+                    onChange={(e) => {
+                      opts.setHidden((prev) => {
+                        const next = new Set(prev);
+                        if (e.target.checked) {
+                          if (visibleCount <= 1) {
+                            toast.error(
+                              'At least one option must remain visible.',
+                            );
+                            return prev;
+                          }
+                          next.add(id);
+                        } else {
+                          next.delete(id);
+                        }
+                        return next;
+                      });
+                    }}
+                  />
+                  Hide
+                </label>
+                {!isBuiltin ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="text-muted-foreground hover:text-destructive"
+                    onClick={() =>
+                      removeCustomFromOrder(
+                        id,
+                        opts.builtinSet,
+                        opts.setOrder,
+                        opts.setHidden,
+                        opts.setLabels,
+                      )
+                    }
+                    aria-label={`Remove ${id}`}
+                  >
+                    <Trash2 size={14} />
+                  </Button>
+                ) : null}
               </div>
-              <code className="hidden w-44 shrink-0 text-[11px] text-muted-foreground sm:block">
-                {id}
-              </code>
-              <div className="min-w-[200px] flex-1">
-                <Label className="sr-only">Label for {id}</Label>
-                <Input
-                  value={opts.labels[id] ?? ''}
-                  onChange={(e) =>
-                    opts.setLabels((prev) => ({
-                      ...prev,
-                      [id]: e.target.value,
-                    }))
-                  }
-                  placeholder={opts.defaultLabels[id] ?? id}
-                />
-              </div>
-              <label className="flex items-center gap-2 text-xs text-muted-foreground">
-                <input
-                  type="checkbox"
-                  checked={opts.hidden.has(id)}
-                  onChange={(e) => {
-                    opts.setHidden((prev) => {
-                      const next = new Set(prev);
-                      if (e.target.checked) next.add(id);
-                      else next.delete(id);
-                      return next;
-                    });
-                  }}
-                />
-                Hide
-              </label>
-              {!isBuiltin ? (
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  className="text-muted-foreground hover:text-destructive"
-                  onClick={() =>
-                    removeCustomFromOrder(
-                      id,
-                      opts.builtinSet,
-                      opts.setOrder,
-                      opts.setHidden,
-                      opts.setLabels,
-                    )
-                  }
-                  aria-label={`Remove ${id}`}
-                >
-                  <Trash2 size={14} />
-                </Button>
-              ) : null}
-            </div>
-          );
-        })}
-      </CardContent>
-    </Card>
-  );
+            );
+          })}
+        </CardContent>
+      </Card>
+    );
+  };
 
   return (
     <>
@@ -721,7 +896,9 @@ export function SettingsPage() {
 
       <div className="space-y-8">
         <section>
-          <h2 className="mb-3 text-sm font-semibold text-foreground">Appearance</h2>
+          <h2 className="mb-3 text-sm font-semibold text-foreground">
+            Appearance
+          </h2>
           <div className="mb-4 flex flex-wrap gap-2">
             {APPEARANCE_MODES.map((mode) => {
               const active = appearanceDraft === mode;
@@ -742,7 +919,9 @@ export function SettingsPage() {
               );
             })}
           </div>
-          <h2 className="mb-3 text-sm font-semibold text-foreground">Color preset</h2>
+          <h2 className="mb-3 text-sm font-semibold text-foreground">
+            Color preset
+          </h2>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
             {THEME_PRESETS.map((t) => {
               const active = themeDraft === t.id;
@@ -833,8 +1012,66 @@ export function SettingsPage() {
         })}
 
         {renderConfigurableList({
+          title: 'Work modes',
+          description:
+            'Reorder, rename, hide, or add custom work modes (remote, hybrid, onsite, …).',
+          order: workModeOrder,
+          setOrder: setWorkModeOrder,
+          labels: labelByWorkMode,
+          setLabels: setLabelByWorkMode,
+          hidden: hiddenWorkModes,
+          setHidden: setHiddenWorkModes,
+          builtinSet: BUILTIN_WORK_MODE,
+          defaultLabels: workModeLabels as Record<string, string>,
+          newSlug: newWorkModeSlug,
+          setNewSlug: setNewWorkModeSlug,
+          slugError: workModeSlugError,
+          setSlugError: setWorkModeSlugError,
+          addLabelPlaceholder: '',
+        })}
+
+        {renderConfigurableList({
+          title: 'Application statuses',
+          description:
+            'Macro pipeline phases used by the status changer, filters and dashboard.',
+          order: statusOrder,
+          setOrder: setStatusOrder,
+          labels: labelByStatus,
+          setLabels: setLabelByStatus,
+          hidden: hiddenStatuses,
+          setHidden: setHiddenStatuses,
+          builtinSet: BUILTIN_STATUS,
+          defaultLabels: statusLabels as Record<string, string>,
+          newSlug: newStatusSlug,
+          setNewSlug: setNewStatusSlug,
+          slugError: statusSlugError,
+          setSlugError: setStatusSlugError,
+          addLabelPlaceholder: '',
+        })}
+
+        {renderConfigurableList({
+          title: 'Application stages',
+          description:
+            'Granular steps within each status (e.g. recruiter screen, take-home, behavioral).',
+          order: stageOrder,
+          setOrder: setStageOrder,
+          labels: labelByStage,
+          setLabels: setLabelByStage,
+          hidden: hiddenStages,
+          setHidden: setHiddenStages,
+          builtinSet: BUILTIN_STAGE,
+          defaultLabels: stageLabels as Record<string, string>,
+          newSlug: newStageSlug,
+          setNewSlug: setNewStageSlug,
+          slugError: stageSlugError,
+          setSlugError: setStageSlugError,
+          addLabelPlaceholder: '',
+        })}
+
+        {renderConfigurableList({
           title: 'Search session platforms',
-          description: 'Platforms when logging a job search session or filtering sessions.',
+          description:
+            'Platforms when logging a job search session or filtering sessions.',
           order: searchPlatformOrder,
           setOrder: setSearchPlatformOrder,
           labels: labelBySearchPlatform,
@@ -854,7 +1091,8 @@ export function SettingsPage() {
           <CardHeader>
             <CardTitle className="text-base">Role title options</CardTitle>
             <p className="text-xs text-muted-foreground">
-              Values shown in the application form “Role” selector (exact strings saved).
+              Values shown in the application form “Role” selector (exact strings
+              saved).
             </p>
           </CardHeader>
           <CardContent className="space-y-2">
@@ -873,7 +1111,9 @@ export function SettingsPage() {
                   size="sm"
                   variant="ghost"
                   onClick={() =>
-                    setRoleTitleOptions(roleTitleOptions.filter((_, i) => i !== idx))
+                    setRoleTitleOptions(
+                      roleTitleOptions.filter((_, i) => i !== idx),
+                    )
                   }
                   aria-label="Remove row"
                 >
@@ -929,34 +1169,12 @@ export function SettingsPage() {
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => setResumeVersionOptions([...resumeVersionOptions, ''])}
+              onClick={() =>
+                setResumeVersionOptions([...resumeVersionOptions, ''])
+              }
             >
               <Plus size={14} /> Add resume option
             </Button>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Work mode labels</CardTitle>
-          </CardHeader>
-          <CardContent className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {ALL_WORK_MODES.map((w) => (
-              <div key={w}>
-                <Label className="text-xs text-muted-foreground">{w}</Label>
-                <Input
-                  className="mt-1"
-                  value={labelByWorkMode[w] ?? ''}
-                  onChange={(e) =>
-                    setLabelByWorkMode((prev) => ({
-                      ...prev,
-                      [w]: e.target.value,
-                    }))
-                  }
-                  placeholder={workModeLabels[w]}
-                />
-              </div>
-            ))}
           </CardContent>
         </Card>
 

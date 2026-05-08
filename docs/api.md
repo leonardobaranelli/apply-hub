@@ -133,11 +133,11 @@ in-line `application_submitted` event is **not** included; fetch
 | `page` | `int >= 1` | default `1` |
 | `limit` | `int 1..200` | default `25` |
 | `search` | `string` | ILIKE on `roleTitle`, `jobTitle`, `companyName`, `notes`, `location` |
-| `status` | `ApplicationStatus[]` | comma list or repeated query param |
-| `stage` | `ApplicationStage[]` | comma list or repeated query param |
+| `status` | `string[]` | comma list or repeated query param; matches the configured vocabulary |
+| `stage` | `string[]` | comma list or repeated query param; matches the configured vocabulary |
 | `position` | `string[]` | matches the configured vocabulary |
 | `method` | `string[]` | matches the configured vocabulary |
-| `workMode` | `WorkMode[]` | comma list or repeated query param |
+| `workMode` | `string[]` | comma list or repeated query param; matches the configured vocabulary |
 | `priority` | `Priority[]` | comma list or repeated query param |
 | `companyName` | `string` | ILIKE |
 | `tags` | `string[]` | `hasSome` semantics |
@@ -450,12 +450,12 @@ interface DashboardOverview {
     avgDaysToFirstResponse: number | null;
     avgDaysToOffer: number | null;
   };
-  byStatus: Array<{ key: ApplicationStatus; count: number; percentage: number }>;
+  byStatus: Array<{ key: string; count: number; percentage: number }>;
   byPosition: Array<{ key: string; count: number; percentage: number }>;
   byMethod: Array<{ key: string; count: number; percentage: number }>;
-  byWorkMode: Array<{ key: WorkMode; count: number; percentage: number }>;
+  byWorkMode: Array<{ key: string; count: number; percentage: number }>;
   funnel: Array<{
-    status: ApplicationStatus;             // FUNNEL_ORDER positions
+    status: string;                        // FUNNEL_ORDER positions
     count: number;
     conversionFromPrev: number | null;     // null on the first step
     conversionFromTop: number;
@@ -543,15 +543,22 @@ Single-row settings store (`id = "default"`).
       "job_board", "referral", "recruiter_outreach", "other", "x_recruiter"
     ],
     "applicationMethodHidden": ["job_board"],
+
+    "customWorkModes": ["coworking"],
     "workModeLabels": { "remote": "Fully remote" },
+    "workModeOrder": ["remote", "hybrid", "onsite", "unknown", "other", "coworking"],
+    "workModeHidden": [],
+
     "customPositionTypes": ["devops"],
     "positionLabels": { "ai_developer": "AI Engineer" },
-    "positionOrder": ["fullstack", "backend", "ai_developer", "devops"],
+    "positionOrder": ["fullstack", "backend", "ai_developer", "other", "devops"],
     "positionHidden": [],
+
     "customEmploymentTypes": [],
     "employmentLabels": {},
-    "employmentOrder": ["full_time", "part_time", "contract", "internship", "freelance"],
+    "employmentOrder": ["full_time", "part_time", "contract", "internship", "freelance", "other"],
     "employmentHidden": [],
+
     "customSearchPlatforms": ["wellfound"],
     "searchPlatformLabels": {},
     "searchPlatformOrder": [
@@ -559,6 +566,26 @@ Single-row settings store (`id = "default"`).
       "company_site", "recruiter_portal", "other", "wellfound"
     ],
     "searchPlatformHidden": [],
+
+    "customApplicationStatuses": ["paused"],
+    "applicationStatusLabels": { "interview": "Interviewing" },
+    "applicationStatusOrder": [
+      "applied", "acknowledged", "screening", "assessment", "interview",
+      "offer", "negotiating", "accepted", "rejected", "withdrawn",
+      "ghosted", "on_hold", "other", "paused"
+    ],
+    "applicationStatusHidden": [],
+
+    "customApplicationStages": [],
+    "applicationStageLabels": {},
+    "applicationStageOrder": [
+      "submitted", "auto_reply", "recruiter_screen", "hiring_manager_screen",
+      "take_home", "tech_interview_1", "tech_interview_2", "behavioral",
+      "culture_fit", "offer_received", "offer_negotiation", "offer_accepted",
+      "offer_declined", "closed", "other"
+    ],
+    "applicationStageHidden": [],
+
     "roleTitleOptions": ["Junior", "SSR", "Senior"],
     "resumeVersionOptions": ["English version", "Spanish version"]
   }
@@ -570,17 +597,17 @@ Single-row settings store (`id = "default"`).
 `PlatformSettingsService.assertValidFormConfig` enforces all of:
 
 - **Custom slugs** (`customApplicationMethods`, `customPositionTypes`,
-  `customEmploymentTypes`, `customSearchPlatforms`):
+  `customEmploymentTypes`, `customSearchPlatforms`, `customWorkModes`,
+  `customApplicationStatuses`, `customApplicationStages`):
   - regex `^[a-z][a-z0-9_]{0,47}$` (≤ 48 chars).
-  - Must not collide with the corresponding built-in enum values.
+  - Must not collide with the corresponding built-in IDs.
   - No duplicates within an array.
 - **Orders** (`*Order`): if present, **must be a full permutation** of the
   universe `built-in ∪ custom` (same length, no duplicates, no unknowns).
   Partial orders are rejected.
-- **Hidden** (`*Hidden`): subset of the universe.
+- **Hidden** (`*Hidden`): subset of the universe **AND** at least one option
+  must remain visible (i.e. `hidden.size < universe.size`).
 - **Labels** (`*Labels`): keys must be members of the universe.
-- `workModeLabels` keys must be members of the strict `WorkMode` enum
-  (no custom slugs allowed for work mode).
 - `roleTitleOptions`: ≤ 80 entries, each ≤ 200 chars.
 - `resumeVersionOptions`: ≤ 40 entries, each ≤ 120 chars.
 
@@ -589,13 +616,14 @@ Any failure raises `400 BadRequestException` with a precise message
 
 ### 7.2 Why selectors are validated on every write
 
-Both `ApplicationsService.create/update` and
+Both `ApplicationsService.create/update/changeStatus` and
 `SearchSessionsService.create/update` re-validate the relevant selector
-fields (`applicationMethod`, `position`, `employmentType`, `platform`)
-against the **current** `formConfig`. If you remove a custom slug from
-Settings, **existing rows keep it** (you can still read them), but you
-**cannot create new rows** with that value. This avoids historical data
-loss while preventing the vocabulary from drifting.
+fields (`applicationMethod`, `position`, `employmentType`, `workMode`,
+`status`, `stage`, `platform`) against the **current** `formConfig`. If
+you remove a custom slug from Settings, **existing rows keep it** (you
+can still read them), but you **cannot create new rows** with that value.
+This avoids historical data loss while preventing the vocabulary from
+drifting.
 
 ---
 

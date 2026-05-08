@@ -1,11 +1,8 @@
 import { api, type Paginated } from '@/lib/api';
 import type {
-  ApplicationStage,
-  ApplicationStatus,
   EventChannel,
   JobPostingLanguage,
   Priority,
-  WorkMode,
 } from '@/types/enums';
 import type { JobApplication } from '@/types/models';
 
@@ -18,7 +15,7 @@ export interface CreateApplicationInput {
   jobDescription?: string | null;
   jobUrl?: string | null;
   location?: string | null;
-  workMode?: WorkMode;
+  workMode?: string;
   employmentType?: string | null;
   applicationDate?: string;
   vacancyPostedDate?: string;
@@ -48,11 +45,11 @@ export interface ApplicationFilters {
   page?: number;
   limit?: number;
   search?: string;
-  status?: ApplicationStatus[];
-  stage?: ApplicationStage[];
+  status?: string[];
+  stage?: string[];
   position?: string[];
   method?: string[];
-  workMode?: WorkMode[];
+  workMode?: string[];
   priority?: Priority[];
   companyName?: string;
   fromDate?: string;
@@ -71,8 +68,8 @@ export interface ApplicationFilters {
 }
 
 export interface ChangeStatusInput {
-  status: ApplicationStatus;
-  stage?: ApplicationStage;
+  status: string;
+  stage?: string;
   title?: string;
   description?: string;
   channel?: EventChannel;

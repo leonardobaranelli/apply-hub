@@ -2,9 +2,9 @@ import { Search, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
-import { ApplicationStatus, Priority } from '@/types/enums';
+import { Priority } from '@/types/enums';
 import { usePlatformSettings } from '@/context/platform-settings-context';
-import { priorityLabels, statusLabels } from '@/types/labels';
+import { priorityLabels } from '@/types/labels';
 import type { ApplicationFilters as Filters } from '@/api/applications';
 
 interface Props {
@@ -27,6 +27,7 @@ export function ApplicationFiltersBar({ value, onChange }: Props) {
     methodSelectOptions,
     workModeSelectOptions,
     positionSelectOptions,
+    statusSelectOptions,
   } = usePlatformSettings();
 
   const update = <K extends keyof Filters>(key: K, val: Filters[K]): void => {
@@ -74,7 +75,13 @@ export function ApplicationFiltersBar({ value, onChange }: Props) {
           <Select
             value={value.status?.[0] ?? ''}
             onChange={(e) => updateSingleArray('status', e.target.value)}
-            options={enumOpts(ApplicationStatus, statusLabels)}
+            options={[
+              allOption,
+              ...statusSelectOptions.map((o) => ({
+                value: o.value,
+                label: o.label,
+              })),
+            ]}
             className="h-9 min-w-[140px]"
           />
           <Select
