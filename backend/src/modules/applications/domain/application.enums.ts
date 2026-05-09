@@ -118,7 +118,6 @@ export const FUNNEL_ORDER: readonly ApplicationStatus[] = [
   ApplicationStatus.INTERVIEW,
   ApplicationStatus.OFFER,
   ApplicationStatus.NEGOTIATING,
-  ApplicationStatus.ACCEPTED,
 ];
 
 export const isActiveStatus = (status: string): boolean =>
@@ -127,5 +126,8 @@ export const isActiveStatus = (status: string): boolean =>
 export const isTerminalStatus = (status: string): boolean =>
   TERMINAL_STATUSES.has(status as ApplicationStatus);
 
-export const funnelIndex = (status: string): number =>
-  FUNNEL_ORDER.indexOf(status as ApplicationStatus);
+export const funnelIndex = (status: string): number => {
+  const s = status as ApplicationStatus;
+  if (s === ApplicationStatus.ACCEPTED) return FUNNEL_ORDER.length;
+  return FUNNEL_ORDER.indexOf(s);
+};
