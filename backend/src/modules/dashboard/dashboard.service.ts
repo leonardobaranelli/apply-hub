@@ -254,22 +254,20 @@ export class DashboardService {
     const total = apps.length;
     let prev: number | null = null;
     for (const status of FUNNEL_ORDER) {
-      const reached = apps.filter((a) =>
-        this.hasReachedFunnelStep(a, status),
-      ).length;
+      const count = apps.filter((a) => a.status === status).length;
       steps.push({
         status,
-        count: reached,
+        count,
         conversionFromPrev:
           prev === null
             ? null
             : prev === 0
               ? 0
-              : Math.round((reached / prev) * 1000) / 10,
+              : Math.round((count / prev) * 1000) / 10,
         conversionFromTop:
-          total === 0 ? 0 : Math.round((reached / total) * 1000) / 10,
+          total === 0 ? 0 : Math.round((count / total) * 1000) / 10,
       });
-      prev = reached;
+      prev = count;
     }
     return steps;
   }
